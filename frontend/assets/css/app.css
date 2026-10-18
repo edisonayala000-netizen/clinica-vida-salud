@@ -291,7 +291,9 @@ input[readonly] { background: #F5F8F7; color: var(--tinta-suave); }
 .ayuda { color: var(--tinta-tenue); font-size: .8rem; }
 .campo-con-icono { position: relative; }
 .campo-con-icono > .ico { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--tinta-tenue); pointer-events: none; }
-.campo-con-icono input { padding-left: 40px; }
+/* Mismo selector que la regla general de los campos (más específico) para que el texto no quede encima del ícono */
+.campo-con-icono > input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) { padding-left: 40px; }
+.campo-con-icono:has(.ver-clave) > input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) { padding-right: 44px; }
 .ver-clave { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); border: 0; background: none; color: var(--tinta-tenue); cursor: pointer; padding: 6px; display: grid; }
 .casilla, .campo label.casilla { display: flex; align-items: flex-start; gap: 10px; font-size: .92rem; font-weight: 400; cursor: pointer; }
 .casilla input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--verde); }
@@ -312,7 +314,7 @@ input[readonly] { background: #F5F8F7; color: var(--tinta-suave); }
 .filtros .campo-buscar { flex: 1 1 260px; }
 .filtros .campo label { font-size: .78rem; color: var(--tinta-suave); }
 .filtros input, .filtros select { min-height: 38px; padding: 7px 10px; }
-.filtros .campo-con-icono input { padding-left: 38px; }
+.filtros .campo-con-icono > input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]) { padding-left: 38px; }
 
 /* Indicadores */
 .indicadores { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }
