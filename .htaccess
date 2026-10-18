@@ -1,0 +1,15 @@
+# =====================================================================
+#  Apache (XAMPP): el proyecto vive en C:\xampp\htdocs\clinica-vida-salud
+#  - /assets/...   -> frontend/assets/...      (CSS, JS, imágenes, fuentes)
+#  - todo lo demás -> backend/public/index.php (controlador frontal)
+#  Las carpetas internas (código, vistas, SQL, documentación) no se
+#  pueden abrir desde el navegador.
+# =====================================================================
+Options -Indexes
+DirectoryIndex disabled
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(backend|frontend|basededato|doc|\.git)(/|$) - [F,L]
+    RewriteRule ^assets/(.+)$ frontend/assets/$1 [END]
+    RewriteRule ^ backend/public/index.php [QSA,END]
+</IfModule>

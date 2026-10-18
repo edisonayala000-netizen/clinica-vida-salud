@@ -1,0 +1,72 @@
+[
+    {
+        "n": 1,
+        "nombre": "Registrar un paciente nuevo",
+        "esperado": "El paciente queda guardado",
+        "obtenido": "Paciente PAC-0024 · Paciente De Prueba registrado. (CI 55989716)",
+        "ok": true
+    },
+    {
+        "n": 2,
+        "nombre": "Registrar un paciente con CI duplicado",
+        "esperado": "El sistema rechaza el duplicado",
+        "obtenido": "Ya existe un paciente registrado con ese CI. | Este CI ya pertenece a otro paciente.",
+        "ok": true
+    },
+    {
+        "n": 3,
+        "nombre": "Programar una cita en horario disponible",
+        "esperado": "La cita queda registrada",
+        "obtenido": "Cita CM-1002 registrada. (2026-10-19 08:00, Dr. Juan Pérez)",
+        "ok": true
+    },
+    {
+        "n": 4,
+        "nombre": "Programar otra cita superpuesta para el mismo médico",
+        "esperado": "El sistema impide el conflicto",
+        "obtenido": "RN07: el médico ya tiene una cita de 08:00 a 08:30. Elija otro horario.",
+        "ok": true
+    },
+    {
+        "n": 5,
+        "nombre": "Intentar reservar fuera del horario del médico",
+        "esperado": "El sistema rechaza la cita",
+        "obtenido": "RN05: la hora elegida está fuera del horario de atención del médico o no respeta los intervalos configurados. (lunes 2026-10-19 a las 20:00; atiende de 08:00 a 12:00)",
+        "ok": true
+    },
+    {
+        "n": 6,
+        "nombre": "Cancelar una cita",
+        "esperado": "Cambia a estado cancelado y conserva el historial",
+        "obtenido": "Cita cancelada. El horario quedó libre y la cita se conserva en el historial. Historial: «Cita registrada» y «Cambio de estado de programada a cancelada».",
+        "ok": true
+    },
+    {
+        "n": 7,
+        "nombre": "Consultar el historial de un paciente",
+        "esperado": "Aparecen sus citas registradas",
+        "obtenido": "El historial muestra la cita CM-1002 con estado Cancelada",
+        "ok": true
+    },
+    {
+        "n": 8,
+        "nombre": "Buscar las citas de un médico por fecha",
+        "esperado": "Se muestran los resultados correctos",
+        "obtenido": "3 cita(s) del 2026-10-19, todas del Dr. Juan Pérez Rojas",
+        "ok": true
+    },
+    {
+        "n": 9,
+        "nombre": "Ingresar a una página interna sin iniciar sesión",
+        "esperado": "El acceso es denegado",
+        "obtenido": "HTTP 302 → redirige a \/login: «Acceso denegado: inicie sesión para continuar.»",
+        "ok": true
+    },
+    {
+        "n": 10,
+        "nombre": "Ejecutar una operación con datos inválidos",
+        "esperado": "El servidor valida y rechaza la operación",
+        "obtenido": "Paciente: Revise los datos marcados en el formulario. | CI debe tener de 5 a 12 dígitos (puede llevar complemento, ej. 1234567-1B). | Nombres solo admite letras y espacio… · Cita: Revise los datos marcados en el formulario. | Fecha no puede ser una fecha pasada. | Hora no es una hora válida (HH:MM).…",
+        "ok": true
+    }
+]

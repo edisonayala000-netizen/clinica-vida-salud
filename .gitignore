@@ -1,0 +1,18 @@
+# Configuración local con contraseñas: NUNCA se sube (ver backend/config/config.php)
+backend/config/config.local.php
+
+# Registros de errores generados al usar el sistema
+backend/storage/logs/*.log
+!backend/storage/logs/.gitkeep
+
+# Archivos temporales de Word / Office (se crean mientras el documento está abierto)
+~$*
+
+# Sistema operativo
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editores
+.vscode/
+.idea/
