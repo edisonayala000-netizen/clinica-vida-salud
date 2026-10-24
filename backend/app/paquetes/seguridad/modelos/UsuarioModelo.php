@@ -6,6 +6,8 @@ use App\Nucleo\BaseDatos;
 
 /**
  * Clase ENTIDAD/acceso a datos de la tabla USUARIO.
+ * Toda cuenta pertenece a una PERSONA: el nombre que se muestra y el médico
+ * o paciente vinculado se leen desde la vista v_usuario.
  * Solo contiene consultas SQL parametrizadas; las reglas de negocio
  * están en los casos de uso (CU01, CU02).
  */
@@ -18,9 +20,8 @@ final class UsuarioModelo
             "SELECT u.id_usuario, u.nombre_usuario, u.password_hash, u.estado, u.intentos_fallidos,
                     u.bloqueado_hasta, u.bloqueado_hasta > now() AS esta_bloqueado,
                     CEIL(EXTRACT(EPOCH FROM (u.bloqueado_hasta - now())) / 60) AS minutos_restantes,
-                    r.nombre AS rol, m.estado AS estado_medico, p.estado AS estado_paciente
-               FROM usuario u
-               JOIN rol r            ON r.id_rol = u.id_rol
+                    u.rol, m.estado AS estado_medico, p.estado AS estado_paciente
+               FROM v_usuario u
                LEFT JOIN medico m    ON m.id_medico = u.id_medico
                LEFT JOIN paciente p  ON p.id_paciente = u.id_paciente
               WHERE u.nombre_usuario = :v OR u.correo = :v",
@@ -61,9 +62,8 @@ final class UsuarioModelo
     {
         $sql = "SELECT u.id_usuario, u.nombre_usuario, u.nombre_completo, u.correo, u.estado,
                        u.ultimo_acceso, u.bloqueado_hasta > now() AS esta_bloqueado,
-                       r.nombre AS rol, m.codigo AS codigo_medico, p.codigo AS codigo_paciente
-                  FROM usuario u
-                  JOIN rol r           ON r.id_rol = u.id_rol
+                       u.rol, m.codigo AS codigo_medico, p.codigo AS codigo_paciente
+                  FROM v_usuario u
                   LEFT JOIN medico m   ON m.id_medico = u.id_medico
                   LEFT JOIN paciente p ON p.id_paciente = u.id_paciente
                  WHERE 1 = 1";
@@ -73,39 +73,37 @@ final class UsuarioModelo
             $p['q'] = '%' . $buscar . '%';
         }
         if ($rol) {
-            $sql .= " AND r.nombre = :rol";
+            $sql .= " AND u.rol = :rol";
             $p['rol'] = $rol;
         }
         if ($estado) {
             $sql .= " AND u.estado = :estado";
             $p['estado'] = $estado;
         }
-        return BaseDatos::todos($sql . " ORDER BY r.id_rol, u.nombre_completo", $p);
+        return BaseDatos::todos($sql . " ORDER BY u.id_rol, u.nombre_completo", $p);
     }
 
     public function obtener(int $id): ?array
     {
         return BaseDatos::uno(
-            "SELECT u.*, r.nombre AS rol FROM usuario u JOIN rol r ON r.id_rol = u.id_rol
-              WHERE u.id_usuario = :id",
+            "SELECT u.* FROM v_usuario u WHERE u.id_usuario = :id",
             ['id' => $id]
         );
     }
 
+    /** @param array{nombre_usuario:string,correo:string,password_hash:string,id_rol:int,id_persona:int} $d */
     public function crear(array $d): int
     {
         return (int) BaseDatos::valor(
-            "INSERT INTO usuario (nombre_usuario, correo, password_hash, nombre_completo, id_rol, id_medico, id_paciente)
-             VALUES (:nombre_usuario, :correo, :hash, :nombre_completo, :id_rol, :id_medico, :id_paciente)
+            "INSERT INTO usuario (id_persona, id_rol, nombre_usuario, correo, password_hash)
+             VALUES (:id_persona, :id_rol, :nombre_usuario, :correo, :hash)
              RETURNING id_usuario",
             [
-                'nombre_usuario'  => $d['nombre_usuario'],
-                'correo'          => $d['correo'],
-                'hash'            => $d['password_hash'],
-                'nombre_completo' => $d['nombre_completo'],
-                'id_rol'          => $d['id_rol'],
-                'id_medico'       => $d['id_medico'] ?? null,
-                'id_paciente'     => $d['id_paciente'] ?? null,
+                'id_persona'     => $d['id_persona'],
+                'id_rol'         => $d['id_rol'],
+                'nombre_usuario' => $d['nombre_usuario'],
+                'correo'         => $d['correo'],
+                'hash'           => $d['password_hash'],
             ]
         );
     }
@@ -114,18 +112,42 @@ final class UsuarioModelo
     {
         BaseDatos::ejecutar(
             "UPDATE usuario
-                SET nombre_usuario = :nombre_usuario, correo = :correo, nombre_completo = :nombre_completo,
-                    id_rol = :id_rol, id_medico = :id_medico, id_paciente = :id_paciente
+                SET id_persona = :id_persona, id_rol = :id_rol, nombre_usuario = :nombre_usuario, correo = :correo
               WHERE id_usuario = :id",
             [
-                'id'              => $id,
-                'nombre_usuario'  => $d['nombre_usuario'],
-                'correo'          => $d['correo'],
-                'nombre_completo' => $d['nombre_completo'],
-                'id_rol'          => $d['id_rol'],
-                'id_medico'       => $d['id_medico'] ?? null,
-                'id_paciente'     => $d['id_paciente'] ?? null,
+                'id'             => $id,
+                'id_persona'     => $d['id_persona'],
+                'id_rol'         => $d['id_rol'],
+                'nombre_usuario' => $d['nombre_usuario'],
+                'correo'         => $d['correo'],
             ]
+        );
+    }
+
+    /** Persona del personal (administrador o recepcionista): nombres, apellidos y correo. */
+    public function crearPersona(string $nombres, string $apellidos, string $correo): int
+    {
+        return (int) BaseDatos::valor(
+            "INSERT INTO persona (nombres, apellidos, correo) VALUES (:n, :a, :c) RETURNING id_persona",
+            ['n' => $nombres, 'a' => $apellidos, 'c' => $correo]
+        );
+    }
+
+    public function actualizarNombrePersona(int $idPersona, string $nombres, string $apellidos): void
+    {
+        BaseDatos::ejecutar(
+            "UPDATE persona SET nombres = :n, apellidos = :a WHERE id_persona = :id",
+            ['id' => $idPersona, 'n' => $nombres, 'a' => $apellidos]
+        );
+    }
+
+    /** ¿La persona es médico o paciente? (su nombre se modifica en su propia ficha). */
+    public function esMedicoOPaciente(int $idPersona): bool
+    {
+        return (bool) BaseDatos::valor(
+            "SELECT EXISTS (SELECT 1 FROM medico WHERE id_medico = :id)
+                 OR EXISTS (SELECT 1 FROM paciente WHERE id_paciente = :id)",
+            ['id' => $idPersona]
         );
     }
 
@@ -155,9 +177,9 @@ final class UsuarioModelo
     {
         return BaseDatos::todos(
             "SELECT m.id_medico, m.codigo, m.nombres || ' ' || m.apellidos AS nombre
-               FROM medico m
+               FROM v_medico m
               WHERE m.estado = 'activo'
-                AND (NOT EXISTS (SELECT 1 FROM usuario u WHERE u.id_medico = m.id_medico) OR m.id_medico = :inc)
+                AND (NOT EXISTS (SELECT 1 FROM usuario u WHERE u.id_persona = m.id_medico) OR m.id_medico = :inc)
               ORDER BY m.apellidos",
             ['inc' => $incluirId ?? 0]
         );
@@ -168,9 +190,9 @@ final class UsuarioModelo
     {
         return BaseDatos::todos(
             "SELECT p.id_paciente, p.codigo, p.ci, p.nombres || ' ' || p.apellidos AS nombre
-               FROM paciente p
+               FROM v_paciente p
               WHERE p.estado = 'activo'
-                AND (NOT EXISTS (SELECT 1 FROM usuario u WHERE u.id_paciente = p.id_paciente) OR p.id_paciente = :inc)
+                AND (NOT EXISTS (SELECT 1 FROM usuario u WHERE u.id_persona = p.id_paciente) OR p.id_paciente = :inc)
               ORDER BY p.apellidos",
             ['inc' => $incluirId ?? 0]
         );
@@ -180,8 +202,7 @@ final class UsuarioModelo
     public function administradoresActivos(): int
     {
         return (int) BaseDatos::valor(
-            "SELECT count(*) FROM usuario u JOIN rol r ON r.id_rol = u.id_rol
-              WHERE r.nombre = 'administrador' AND u.estado = 'activo'"
+            "SELECT count(*) FROM v_usuario u WHERE u.rol = 'administrador' AND u.estado = 'activo'"
         );
     }
 }

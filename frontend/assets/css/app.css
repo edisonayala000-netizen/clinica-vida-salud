@@ -228,6 +228,12 @@ img { max-width: 100%; }
 .tabla .inactivo td { color: var(--tinta-tenue); }
 .celda-principal { font-weight: 600; color: var(--tinta); }
 .celda-sub { display: block; font-size: .8rem; color: var(--tinta-tenue); font-weight: 400; }
+/* Bitácora: valores de antes y de después de un cambio de datos */
+.cambios-datos { margin-top: 6px; font-size: .8rem; }
+.cambios-datos summary { cursor: pointer; color: var(--verde); font-weight: 500; }
+.cambios-datos table { margin-top: 6px; border-collapse: collapse; width: 100%; }
+.cambios-datos th, .cambios-datos td { border: 1px solid var(--borde); padding: 3px 6px; text-align: left; vertical-align: top; word-break: break-word; }
+.cambios-datos th { background: var(--menta); font-weight: 600; }
 .tabla tfoot td { font-weight: 700; background: #F6FAF9; border-top: 1px solid var(--borde); }
 .codigo { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--pino); letter-spacing: .01em; }
 

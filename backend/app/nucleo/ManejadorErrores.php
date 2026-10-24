@@ -14,13 +14,11 @@ final class ManejadorErrores
 {
     /** Nombre de restricción de la BD -> mensaje para el usuario. */
     private const MENSAJES = [
-        'uq_paciente_ci'             => 'Ya existe un paciente registrado con ese CI.',
+        'uq_persona_ci'              => 'Ese CI ya pertenece a otra persona registrada en el sistema.',
         'uq_usuario_nombre'          => 'Ese nombre de usuario ya está en uso.',
         'uq_usuario_correo'          => 'Ese correo ya está registrado en otra cuenta.',
-        'uq_usuario_medico'          => 'Ese médico ya tiene una cuenta de usuario.',
-        'uq_usuario_paciente'        => 'Ese paciente ya tiene una cuenta de usuario.',
+        'uq_usuario_persona'         => 'Esa persona ya tiene una cuenta de usuario.',
         'uq_medico_registro'         => 'Ya existe un médico con ese número de registro profesional.',
-        'uq_medico_correo'           => 'Ya existe un médico con ese correo.',
         'uq_especialidad_nombre_normalizado' => 'Ya existe una especialidad con ese nombre.',
         'uq_dia_no_laborable'        => 'Esa fecha ya está bloqueada.',
         'ex_cita_medico_sin_solape'  => 'RN07: el médico ya tiene una cita en ese horario. Elija otro horario.',

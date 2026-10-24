@@ -30,7 +30,7 @@ use Throwable;
  * Paquete.........: pacientes
  * Actores.........: Paciente
  * Requisitos......: Punto 3.4 Perfil de pacientes
- * Base de datos...: paciente, usuario, rol, contacto_emergencia
+ * Base de datos...: persona + paciente (vista v_paciente), usuario (id_persona), rol, contacto_emergencia
  * Rutas...........: GET/POST /registro (público) · GET /mi-perfil (portal.perfil) · POST /mi-
  *                   perfil/personales · /medica · /emergencia · /cuenta (portal.perfil)
  * Vistas..........: frontend/vistas/pacientes/registro.php, frontend/vistas/pacientes/mi_perfil.php
@@ -100,13 +100,13 @@ final class CU04GestionarPerfilPaciente extends Controlador
                 } else {
                     $idPaciente = $this->pacientes->crear($d);
                 }
+                // La cuenta pertenece a la persona del paciente (id_paciente = id_persona).
                 return (new UsuarioModelo())->crear([
-                    'nombre_usuario'  => $cuenta['nombre_usuario'],
-                    'correo'          => $cuenta['correo'],
-                    'password_hash'   => password_hash($cuenta['clave'], PASSWORD_DEFAULT),
-                    'nombre_completo' => $d['nombres'] . ' ' . $d['apellidos'],
-                    'id_rol'          => (int) $rolPaciente['id_rol'],
-                    'id_paciente'     => $idPaciente,
+                    'nombre_usuario' => $cuenta['nombre_usuario'],
+                    'correo'         => $cuenta['correo'],
+                    'password_hash'  => password_hash($cuenta['clave'], PASSWORD_DEFAULT),
+                    'id_rol'         => (int) $rolPaciente['id_rol'],
+                    'id_persona'     => $idPaciente,
                 ]);
             });
 

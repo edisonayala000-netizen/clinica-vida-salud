@@ -30,8 +30,9 @@ use Throwable;
  * Paquete.........: seguridad
  * Actores.........: Administrador
  * Requisitos......: RF01 · Alcance: administrar usuarios y permisos básicos · bitácora de acciones
- * Base de datos...: usuario, rol, permiso, rol_permiso (trigger fn_tg_validar_usuario_rol), bitacora
- *                   (trigger fn_tg_bitacora_inalterable: no se modifica ni se borra)
+ * Base de datos...: usuario (toda cuenta pertenece a una persona), persona, rol, permiso, rol_permiso
+ *                   (trigger fn_tg_validar_usuario_rol), bitacora (trigger fn_tg_bitacora_inalterable: no se
+ *                   modifica ni se borra; trigger fn_tg_auditoria: cambios de datos con antes y después)
  * Rutas...........: GET /usuarios (usuarios.gestionar) · GET/POST /usuarios/nuevo · /usuarios
  *                   (usuarios.gestionar) · GET/POST /usuarios/{id}/editar · /usuarios/{id}
  *                   (usuarios.gestionar) · POST /usuarios/{id}/estado (usuarios.gestionar) · GET/POST
@@ -104,7 +105,11 @@ final class CU02GestionarUsuariosPermisos extends Controlador
         try {
             $d = $this->validarDatos(true);
             $d['password_hash'] = password_hash($d['clave'], PASSWORD_DEFAULT);
-            BaseDatos::transaccion(fn () => $this->usuarios->crear($d));
+            BaseDatos::transaccion(function () use ($d) {
+                // El personal (administrador o recepcionista) se registra como una persona nueva.
+                $d['id_persona'] ??= $this->usuarios->crearPersona($d['nombres'], $d['apellidos'], $d['correo']);
+                $this->usuarios->crear($d);
+            });
             $this->exito("Usuario «{$d['nombre_usuario']}» registrado.", '/usuarios');
         } catch (Throwable $e) {
             $this->volverConError($e, '/usuarios/nuevo');
@@ -125,7 +130,17 @@ final class CU02GestionarUsuariosPermisos extends Controlador
                 throw new ErrorNegocio('Debe existir al menos un administrador activo.');
             }
 
-            BaseDatos::transaccion(function () use ($id, $d) {
+            BaseDatos::transaccion(function () use ($id, $d, $actual) {
+                if ($d['id_persona'] === null) {
+                    // Personal: se corrige el nombre de su persona; si antes la cuenta era de un
+                    // médico o paciente, el personal se registra como una persona nueva.
+                    if ($this->usuarios->esMedicoOPaciente((int) $actual['id_persona'])) {
+                        $d['id_persona'] = $this->usuarios->crearPersona($d['nombres'], $d['apellidos'], $d['correo']);
+                    } else {
+                        $d['id_persona'] = (int) $actual['id_persona'];
+                        $this->usuarios->actualizarNombrePersona($d['id_persona'], $d['nombres'], $d['apellidos']);
+                    }
+                }
                 $this->usuarios->actualizar($id, $d);
                 if (!empty($d['clave'])) {
                     $this->usuarios->cambiarClave($id, password_hash($d['clave'], PASSWORD_DEFAULT));
@@ -219,10 +234,11 @@ final class CU02GestionarUsuariosPermisos extends Controlador
             Bitacora::registrar('exportacion', 'seguridad', 'Exportó la bitácora a CSV.');
             Respuesta::csv(
                 'bitacora_' . date('Y-m-d_His') . '.csv',
-                ['Fecha', 'Hora', 'Usuario', 'Acción', 'Módulo', 'Detalle', 'IP'],
+                ['Fecha', 'Hora', 'Usuario', 'Acción', 'Módulo', 'Detalle', 'IP', 'Tabla', 'Operación', 'Datos antes', 'Datos después'],
                 array_map(static fn ($r) => [
                     date('d/m/Y', strtotime($r['fecha_hora'])), date('H:i:s', strtotime($r['fecha_hora'])),
                     $r['usuario'], $r['accion'], $r['modulo'], $r['detalle'], $r['ip'],
+                    $r['tabla'], $r['operacion'], $r['datos_antes'], $r['datos_despues'],
                 ], $bitacora->listar($f, null))
             );
         }
@@ -243,12 +259,15 @@ final class CU02GestionarUsuariosPermisos extends Controlador
 
     /**
      * Validación del formulario de usuario (en el servidor).
-     * Según el rol se exige el vínculo con médico o paciente.
+     * Según el rol se exige el vínculo con médico o paciente (su persona) o,
+     * para el personal, sus nombres y apellidos. Deja en id_persona la persona
+     * de la cuenta (null = personal: la resuelve crear() o actualizar()).
      */
     private function validarDatos(bool $esNuevo): array
     {
         $d = Validador::validar($_POST, [
-            'nombre_completo'    => ['Nombre completo', 'requerido|nombre|texto:3:120'],
+            'nombres'            => ['Nombres', 'opcional|nombre|texto:2:60'],
+            'apellidos'          => ['Apellidos', 'opcional|nombre|texto:2:60'],
             'nombre_usuario'     => ['Nombre de usuario', 'requerido|usuario'],
             'correo'             => ['Correo', 'requerido|email|texto:5:120'],
             'id_rol'             => ['Rol', 'requerido|entero:1'],
@@ -267,14 +286,23 @@ final class CU02GestionarUsuariosPermisos extends Controlador
             if (!$d['id_medico']) {
                 throw new ErrorNegocio('Revise los datos.', ['id_medico' => 'Seleccione el médico de esta cuenta.']);
             }
-            $d['id_paciente'] = null;
+            $d['id_persona'] = $d['id_medico'];
         } elseif ($rol['nombre'] === 'paciente') {
             if (!$d['id_paciente']) {
                 throw new ErrorNegocio('Revise los datos.', ['id_paciente' => 'Seleccione el paciente de esta cuenta.']);
             }
-            $d['id_medico'] = null;
+            $d['id_persona'] = $d['id_paciente'];
         } else {
-            $d['id_medico'] = $d['id_paciente'] = null;
+            $errores = [];
+            foreach (['nombres' => 'Indique los nombres.', 'apellidos' => 'Indique los apellidos.'] as $campo => $mensaje) {
+                if (!$d[$campo]) {
+                    $errores[$campo] = $mensaje;
+                }
+            }
+            if ($errores) {
+                throw new ErrorNegocio('Revise los datos.', $errores);
+            }
+            $d['id_persona'] = null;
         }
         return $d;
     }

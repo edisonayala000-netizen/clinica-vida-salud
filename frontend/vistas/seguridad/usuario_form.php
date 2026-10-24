@@ -18,10 +18,15 @@ $nombresRol = ['administrador' => 'Administrador', 'recepcionista' => 'Recepcion
     <div class="tarjeta-cuerpo formulario">
         <fieldset class="grupo-campos">
             <legend>Datos de la cuenta</legend>
-            <div class="campo<?= clase_error($errores, 'nombre_completo') ?>">
-                <label for="nombre_completo">Nombre completo <span class="requerido">*</span></label>
-                <input id="nombre_completo" name="nombre_completo" required minlength="3" maxlength="120" value="<?= $v('nombre_completo') ?>">
-                <?= error_campo($errores, 'nombre_completo') ?>
+            <div class="campo campo-3<?= clase_error($errores, 'nombres') ?>" data-vinculo="personal" hidden>
+                <label for="nombres">Nombres <span class="requerido">*</span></label>
+                <input id="nombres" name="nombres" minlength="2" maxlength="60" value="<?= $v('nombres') ?>">
+                <?= error_campo($errores, 'nombres') ?>
+            </div>
+            <div class="campo campo-3<?= clase_error($errores, 'apellidos') ?>" data-vinculo="personal" hidden>
+                <label for="apellidos">Apellidos <span class="requerido">*</span></label>
+                <input id="apellidos" name="apellidos" minlength="2" maxlength="60" value="<?= $v('apellidos') ?>">
+                <?= error_campo($errores, 'apellidos') ?>
             </div>
             <div class="campo campo-3<?= clase_error($errores, 'nombre_usuario') ?>">
                 <label for="nombre_usuario">Nombre de usuario <span class="requerido">*</span></label>
@@ -90,16 +95,19 @@ $nombresRol = ['administrador' => 'Administrador', 'recepcionista' => 'Recepcion
 </form>
 
 <script>
-/* Muestra el selector de médico o de paciente según el rol elegido. */
+/* Según el rol: médico o paciente eligen la persona vinculada; el personal
+   (administrador o recepcionista) escribe sus nombres y apellidos. */
 (function () {
     const rol = document.querySelector('[data-rol]');
     function actualizar() {
         const nombre = rol.selectedOptions[0] ? rol.selectedOptions[0].dataset.nombre : '';
+        const grupo = (nombre === 'administrador' || nombre === 'recepcionista') ? 'personal' : nombre;
         document.querySelectorAll('[data-vinculo]').forEach(function (c) {
-            const ver = c.dataset.vinculo === nombre;
+            const ver = c.dataset.vinculo === grupo;
+            const control = c.querySelector('select, input');
             c.hidden = !ver;
-            c.querySelector('select').required = ver;
-            if (!ver) c.querySelector('select').value = '';
+            control.required = ver;
+            if (!ver && control.tagName === 'SELECT') control.value = '';
         });
     }
     rol.addEventListener('change', actualizar);

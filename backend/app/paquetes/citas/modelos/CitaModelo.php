@@ -90,7 +90,7 @@ final class CitaModelo
     {
         return BaseDatos::todos(
             "SELECT h.*, u.nombre_completo AS usuario
-               FROM cita_historial h LEFT JOIN usuario u ON u.id_usuario = h.id_usuario
+               FROM cita_historial h LEFT JOIN v_usuario u ON u.id_usuario = h.id_usuario
               WHERE h.id_cita = :id ORDER BY h.fecha_hora, h.id_historial",
             ['id' => $idCita]
         );
@@ -127,7 +127,7 @@ final class CitaModelo
     {
         $sql = "SELECT v.*, p.fecha_nacimiento, p.sexo, p.tipo_sangre, p.alergias, p.enfermedades_cronicas,
                        p.medicamentos, p.compartir_info_medica
-                  FROM v_cita_detalle v JOIN paciente p ON p.id_paciente = v.id_paciente
+                  FROM v_cita_detalle v JOIN v_paciente p ON p.id_paciente = v.id_paciente
                  WHERE v.id_medico = :m AND v.fecha = CAST(:f AS DATE)";
         $p = ['m' => $idMedico, 'f' => $fecha];
         if ($estado) {

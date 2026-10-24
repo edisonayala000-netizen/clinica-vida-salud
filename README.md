@@ -10,7 +10,7 @@ Segundo Examen Parcial — Sistemas de Información I (SA) — UAGRM, FICCT · *
 
 | Carpeta | Contenido | Guía |
 |---|---|---|
-| `basededato/sql/` | Base de datos PostgreSQL: 14 tablas (incluida la bitácora), restricciones `CHECK`/`UNIQUE`/`EXCLUDE`, 7 funciones de trigger, 3 vistas, datos de prueba y 16 pruebas | [LEEME.md](basededato/sql/LEEME.md) |
+| `basededato/sql/` | Base de datos PostgreSQL: 24 tablas (PERSONA como generalización de paciente y médico, bitácora con auditoría, atención médica y notificaciones), restricciones `CHECK`/`UNIQUE`/`EXCLUDE`, 15 funciones de trigger, 8 vistas, datos de prueba y 25 pruebas | [LEEME.md](basededato/sql/LEEME.md) |
 | `backend/` | PHP 8 sin frameworks: **toda la lógica de negocio**, un archivo por caso de uso, acceso a datos con PDO, login y permisos | [README.md](backend/README.md) |
 | `frontend/` | Interfaz: vistas HTML5 por paquete, CSS3 y JavaScript | [README.md](frontend/README.md) |
 | `doc/` | Documento del proyecto (.docx y .pdf), diagramas StarUML, capturas, guía de defensa y prompt para Claude Code | [README.md](doc/README.md) |
@@ -84,7 +84,7 @@ Sin Apache (desde la carpeta raíz): `php -S localhost:8000 backend/public/route
 :: 10 pruebas del examen (con el sistema encendido)
 php backend\tests\pruebas_sistema.php http://localhost/clinica-vida-salud
 
-:: 16 pruebas de restricciones y triggers (no dejan cambios en la base)
+:: 25 pruebas de restricciones y triggers (no dejan cambios en la base)
 psql -U postgres -d clinica_vida_salud -f basededato\sql\pruebas\pruebas_bd.sql
 ```
 

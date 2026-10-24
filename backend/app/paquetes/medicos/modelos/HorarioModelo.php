@@ -119,7 +119,7 @@ final class HorarioModelo
         return BaseDatos::todos(
             "SELECT d.*, CASE WHEN d.id_medico IS NULL THEN 'Toda la clínica'
                               ELSE 'Dr(a). ' || m.nombres || ' ' || m.apellidos END AS alcance
-               FROM dia_no_laborable d LEFT JOIN medico m ON m.id_medico = d.id_medico
+               FROM dia_no_laborable d LEFT JOIN v_medico m ON m.id_medico = d.id_medico
               WHERE d.fecha >= CURRENT_DATE AND (d.id_medico IS NULL OR d.id_medico = :m)
               ORDER BY d.fecha",
             ['m' => $idMedico ?? 0]

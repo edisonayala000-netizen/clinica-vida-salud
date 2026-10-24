@@ -49,11 +49,11 @@ final class Autenticacion
         if (!$id) {
             return null;
         }
+        // v_usuario une la cuenta con su persona: nombre completo y médico o paciente vinculado.
         $fila = BaseDatos::uno(
-            "SELECT u.id_usuario, u.nombre_usuario, u.nombre_completo, u.correo, u.id_medico,
-                    u.id_paciente, r.nombre AS rol
-               FROM usuario u
-               JOIN rol r ON r.id_rol = u.id_rol
+            "SELECT u.id_usuario, u.id_persona, u.nombre_usuario, u.nombre_completo, u.correo, u.id_medico,
+                    u.id_paciente, u.rol
+               FROM v_usuario u
               WHERE u.id_usuario = :id AND u.estado = 'activo'",
             ['id' => (int) $id]
         );

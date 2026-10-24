@@ -16,3 +16,7 @@ desktop.ini
 # Editores
 .vscode/
 .idea/
+
+# Proyecto de Enterprise Architect (local) y su archivo de bloqueo
+doc/*.eapx
+doc/*.ldb

@@ -5,6 +5,8 @@ use App\Nucleo\BaseDatos;
 
 /**
  * Acceso a datos de MEDICO y MEDICO_ESPECIALIDAD.
+ * Los datos personales del médico están en PERSONA (generalización); las
+ * consultas los leen junto con los del médico desde v_medico.
  */
 final class MedicoModelo
 {
@@ -15,7 +17,7 @@ final class MedicoModelo
                        (SELECT count(*) FROM horario_atencion h WHERE h.id_medico = v.id_medico AND h.estado = 'activo') AS bloques,
                        (SELECT count(*) FROM cita c WHERE c.id_medico = v.id_medico AND c.fecha >= CURRENT_DATE
                            AND c.estado IN ('programada','confirmada')) AS citas_pendientes,
-                       (SELECT u.nombre_usuario FROM usuario u WHERE u.id_medico = v.id_medico) AS cuenta
+                       (SELECT u.nombre_usuario FROM v_usuario u WHERE u.id_medico = v.id_medico) AS cuenta
                   FROM v_medico_especialidades v
                  WHERE 1 = 1";
         $p = [];
@@ -55,7 +57,7 @@ final class MedicoModelo
         return BaseDatos::todos(
             "SELECT m.id_medico, m.codigo, m.nombres, m.apellidos,
                     'Dr(a). ' || m.nombres || ' ' || m.apellidos AS nombre
-               FROM medico m
+               FROM v_medico m
                JOIN medico_especialidad me ON me.id_medico = m.id_medico
               WHERE me.id_especialidad = :e AND m.estado = 'activo'
                 AND EXISTS (SELECT 1 FROM horario_atencion h WHERE h.id_medico = m.id_medico AND h.estado = 'activo')
@@ -68,38 +70,46 @@ final class MedicoModelo
     {
         return BaseDatos::todos(
             "SELECT id_medico, codigo, estado, 'Dr(a). ' || nombres || ' ' || apellidos AS nombre
-               FROM medico " . ($soloActivos ? "WHERE estado = 'activo' " : '') . "ORDER BY apellidos, nombres"
+               FROM v_medico " . ($soloActivos ? "WHERE estado = 'activo' " : '') . "ORDER BY apellidos, nombres"
         );
     }
 
+    /** Registra la persona y luego su subtipo médico (llamar dentro de una transacción). */
     public function crear(array $d): int
     {
-        return (int) BaseDatos::valor(
-            "INSERT INTO medico (registro_profesional, nombres, apellidos, telefono, correo)
-             VALUES (:registro_profesional, :nombres, :apellidos, :telefono, :correo)
-             RETURNING id_medico",
-            $this->campos($d)
+        $id = (int) BaseDatos::valor(
+            "INSERT INTO persona (nombres, apellidos, telefono, correo)
+             VALUES (:nombres, :apellidos, :telefono, :correo)
+             RETURNING id_persona",
+            $this->datosPersona($d)
         );
+        BaseDatos::ejecutar(
+            "INSERT INTO medico (id_medico, registro_profesional) VALUES (:id, :registro)",
+            ['id' => $id, 'registro' => $d['registro_profesional']]
+        );
+        return $id;
     }
 
     public function actualizar(int $id, array $d): void
     {
         BaseDatos::ejecutar(
-            "UPDATE medico SET registro_profesional = :registro_profesional, nombres = :nombres,
-                    apellidos = :apellidos, telefono = :telefono, correo = :correo
-              WHERE id_medico = :id",
-            $this->campos($d) + ['id' => $id]
+            "UPDATE persona SET nombres = :nombres, apellidos = :apellidos, telefono = :telefono, correo = :correo
+              WHERE id_persona = :id",
+            $this->datosPersona($d) + ['id' => $id]
+        );
+        BaseDatos::ejecutar(
+            "UPDATE medico SET registro_profesional = :registro WHERE id_medico = :id",
+            ['id' => $id, 'registro' => $d['registro_profesional']]
         );
     }
 
-    private function campos(array $d): array
+    private function datosPersona(array $d): array
     {
         return [
-            'registro_profesional' => $d['registro_profesional'],
-            'nombres'              => $d['nombres'],
-            'apellidos'            => $d['apellidos'],
-            'telefono'             => $d['telefono'],
-            'correo'               => $d['correo'],
+            'nombres'   => $d['nombres'],
+            'apellidos' => $d['apellidos'],
+            'telefono'  => $d['telefono'],
+            'correo'    => $d['correo'],
         ];
     }
 

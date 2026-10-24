@@ -5,7 +5,8 @@ use App\Nucleo\BaseDatos;
 
 /**
  * Clase ENTIDAD/acceso a datos de la tabla BITACORA (consulta de CU02).
- * Los registros se agregan con App\Nucleo\Bitacora; aquí solo se consultan.
+ * Los registros se agregan con App\Nucleo\Bitacora (acciones de la aplicación)
+ * y con el trigger fn_tg_auditoria (cambios de datos); aquí solo se consultan.
  */
 final class BitacoraModelo
 {
@@ -21,8 +22,9 @@ final class BitacoraModelo
     {
         [$where, $p] = $this->condiciones($filtros);
         $sql = "SELECT b.id_bitacora, b.fecha_hora, b.usuario, b.accion, b.modulo, b.detalle, b.ip,
+                       b.tabla, b.operacion, b.id_registro, b.datos_antes, b.datos_despues,
                        u.nombre_completo
-                  FROM bitacora b LEFT JOIN usuario u ON u.id_usuario = b.id_usuario" . $where . "
+                  FROM bitacora b LEFT JOIN v_usuario u ON u.id_usuario = b.id_usuario" . $where . "
                  ORDER BY b.fecha_hora DESC, b.id_bitacora DESC";
         if ($pagina !== null) {
             $sql .= " LIMIT :lim OFFSET :off";

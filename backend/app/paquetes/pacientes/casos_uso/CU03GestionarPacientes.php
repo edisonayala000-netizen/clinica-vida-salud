@@ -22,7 +22,7 @@ use Throwable;
  * Paquete.........: pacientes
  * Actores.........: Recepcionista, Administrador
  * Requisitos......: RF02 · RN01 · RN11
- * Base de datos...: paciente (UNIQUE uq_paciente_ci), contacto_emergencia
+ * Base de datos...: persona (UNIQUE uq_persona_ci) + paciente (subtipo), vista v_paciente, contacto_emergencia
  * Rutas...........: GET /pacientes (pacientes.ver) · GET/POST /pacientes/nuevo · /pacientes
  *                   (pacientes.gestionar) · GET /pacientes/{id} (pacientes.ver) · GET/POST
  *                   /pacientes/{id}/editar · /pacientes/{id} (pacientes.gestionar) · POST

@@ -74,8 +74,9 @@ final class BaseDatos
 
     /**
      * Ejecuta $operacion dentro de una transacción.
-     * Informa a PostgreSQL qué usuario hace el cambio (lo usa el trigger
-     * del historial de citas) y un detalle opcional.
+     * Informa a PostgreSQL qué usuario hace el cambio y desde qué IP (los
+     * usan los triggers del historial de citas y de la auditoría) y un
+     * detalle opcional.
      */
     public static function transaccion(callable $operacion, ?string $detalle = null): mixed
     {
@@ -84,6 +85,7 @@ final class BaseDatos
         try {
             $usuario = Autenticacion::id();
             self::ejecutar("SELECT set_config('app.id_usuario', :u, true)", ['u' => $usuario ? (string) $usuario : '']);
+            self::ejecutar("SELECT set_config('app.ip', :ip, true)", ['ip' => mb_substr(Peticion::ip(), 0, 45)]);
             self::ejecutar("SELECT set_config('app.detalle', :d, true)", ['d' => $detalle ?? '']);
             $resultado = $operacion();
             $pdo->commit();
