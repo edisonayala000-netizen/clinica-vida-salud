@@ -24,7 +24,8 @@ use Throwable;
  * Paquete.........: medicos
  * Actores.........: Administrador, Recepcionista
  * Requisitos......: RF03 · RN02 · RN04 · RN11
- * Base de datos...: medico, medico_especialidad, vista v_medico_especialidades
+ * Base de datos...: persona + medico (subtipo; correo único entre médicos), medico_especialidad, vistas v_medico y
+ *                   v_medico_especialidades
  * Rutas...........: GET /medicos (medicos.ver) · GET /medicos/{id} (medicos.ver) · GET/POST /medicos/nuevo ·
  *                   /medicos (medicos.gestionar) · GET/POST /medicos/{id}/editar · /medicos/{id}
  *                   (medicos.gestionar) · POST /medicos/{id}/estado (medicos.gestionar)

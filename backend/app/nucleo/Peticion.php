@@ -40,6 +40,16 @@ final class Peticion
         return $base;
     }
 
+    /**
+     * Esquema y dominio de la petición actual, sin la carpeta base: "https://clinica.ejemplo.com".
+     * Respeta X-Forwarded-Proto cuando el sistema corre detrás de un proxy (como en la nube).
+     */
+    public static function origen(): string
+    {
+        $https = ($_SERVER['HTTPS'] ?? '') === 'on' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+        return ($https ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    }
+
     /** Valor de $_POST o $_GET recortado; null si no viene o está vacío. */
     public static function entrada(string $clave, mixed $porDefecto = null): mixed
     {

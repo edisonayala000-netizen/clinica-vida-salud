@@ -102,7 +102,7 @@ final class PanelPrincipal extends Controlador
     /** Paciente: recordatorios automáticos de las citas de las próximas 48 horas. */
     private function datosPaciente(int $idPaciente): array
     {
-        $p = BaseDatos::uno("SELECT recibir_recordatorios FROM paciente WHERE id_paciente = :id", ['id' => $idPaciente]);
+        $p = BaseDatos::uno("SELECT recordatorio_cita FROM paciente WHERE id_paciente = :id", ['id' => $idPaciente]);
         $proximas = BaseDatos::todos(
             "SELECT * FROM v_cita_detalle
               WHERE id_paciente = :id AND estado IN ('programada','confirmada') AND (fecha + hora_inicio) >= localtimestamp
@@ -110,7 +110,7 @@ final class PanelPrincipal extends Controlador
             ['id' => $idPaciente]
         );
         $recordatorios = [];
-        if ($p && $p['recibir_recordatorios']) {
+        if ($p && $p['recordatorio_cita'] !== 'ninguno') {
             $limite = date('Y-m-d H:i', strtotime('+48 hours'));
             $recordatorios = array_filter($proximas, static fn ($c) => ($c['fecha'] . ' ' . hora($c['hora_inicio'])) <= $limite);
         }

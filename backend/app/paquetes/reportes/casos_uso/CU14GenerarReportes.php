@@ -22,7 +22,7 @@ use Throwable;
  * Paquete.........: reportes
  * Actores.........: Administrador
  * Requisitos......: RF13
- * Base de datos...: vistas v_cita_detalle, v_resumen_citas_dia; tablas cita y paciente
+ * Base de datos...: vistas v_cita_detalle, v_resumen_citas_dia y v_paciente; tabla cita
  * Rutas...........: GET /reportes?tipo=&desde=&hasta=[&formato=csv] (reportes.ver)
  * Vistas..........: frontend/vistas/reportes/reportes.php
  * Usa.............: ReporteModelo

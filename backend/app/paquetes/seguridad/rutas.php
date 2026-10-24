@@ -1,11 +1,12 @@
 <?php
 /**
- * Rutas del paquete SEGURIDAD (CU01, CU02).
+ * Rutas del paquete SEGURIDAD (CU01, CU02, CU15).
  * Formato: método, URL, [clase del caso de uso, método], permiso requerido.
  */
 use App\Nucleo\Enrutador;
 use App\Paquetes\Seguridad\CasosUso\CU01IniciarSesion;
 use App\Paquetes\Seguridad\CasosUso\CU02GestionarUsuariosPermisos;
+use App\Paquetes\Seguridad\CasosUso\CU15RecuperarContrasena;
 
 return static function (Enrutador $r): void {
     // CU01 · Iniciar sesión
@@ -14,6 +15,12 @@ return static function (Enrutador $r): void {
     $r->post('/salir',         [CU01IniciarSesion::class, 'cerrar'],          'autenticado');
     $r->get('/cuenta/clave',   [CU01IniciarSesion::class, 'formularioClave'], 'autenticado');
     $r->post('/cuenta/clave',  [CU01IniciarSesion::class, 'cambiarClave'],    'autenticado');
+
+    // CU15 · Recuperar contraseña por correo (sin sesión)
+    $r->get('/recuperar',      [CU15RecuperarContrasena::class, 'formulario'],            'publico');
+    $r->post('/recuperar',     [CU15RecuperarContrasena::class, 'solicitar'],             'publico');
+    $r->get('/restablecer',    [CU15RecuperarContrasena::class, 'formularioRestablecer'], 'publico');
+    $r->post('/restablecer',   [CU15RecuperarContrasena::class, 'restablecer'],           'publico');
 
     // CU02 · Gestionar usuarios y permisos
     $r->get('/usuarios',               [CU02GestionarUsuariosPermisos::class, 'listar'],          'usuarios.gestionar');

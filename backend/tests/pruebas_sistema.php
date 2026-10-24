@@ -102,7 +102,14 @@ $ci = (string) random_int(10000000, 99999999);
 $idPaciente = 0;
 $idCita = 0;
 $codigoCita = '';
-$idMedico = 1;
+// Los ids se buscan por código y CI: médicos y pacientes comparten la llave de PERSONA.
+$idMedico = (int) (array_values(array_filter(
+    $recep->json('/api/medicos?especialidad=1')['medicos'] ?? [],
+    static fn ($m) => $m['codigo'] === 'MED-001'
+))[0]['id'] ?? 0);                                                  // Dr. Juan Pérez Rojas
+$pacientePorCi = static fn (string $ci): int => (int) ($recep->json('/api/pacientes?q=' . $ci)['pacientes'][0]['id'] ?? 0);
+$idOtroPaciente = $pacientePorCi('7345678');                        // Carlos Vargas Méndez
+$idTercerPaciente = $pacientePorCi('8456789');                      // Lucía Fernández Áñez
 
 /* Busca el primer horario libre del médico en los próximos días. */
 function primerHorarioLibre(Navegador $nav, int $medico): array
@@ -123,7 +130,7 @@ function primerHorarioLibre(Navegador $nav, int $medico): array
 prueba(1, 'Registrar un paciente nuevo', 'El paciente queda guardado', function () use ($recep, $ci, &$idPaciente) {
     $r = $recep->pedir('POST', '/pacientes', [
         '_csrf' => $recep->token('/pacientes/nuevo'), 'ci' => $ci, 'nombres' => 'Paciente', 'apellidos' => 'De Prueba',
-        'fecha_nacimiento' => '1990-05-20', 'sexo' => 'femenino', 'telefono' => '70000001', 'correo' => 'prueba@correo.com',
+        'fecha_nacimiento' => '1990-05-20', 'sexo' => 'femenino', 'telefono' => '70000001', 'correo' => 'prueba.sistema@example.com',
     ]);
     preg_match('#/pacientes/(\d+)$#', $recep->ultimaUrl, $m);
     $idPaciente = (int) ($m[1] ?? 0);
@@ -154,19 +161,19 @@ prueba(3, 'Programar una cita en horario disponible', 'La cita queda registrada'
     return [$idCita > 0 && $codigoCita !== '', mensajes($r['cuerpo']) . " ({$fecha} {$hora}, Dr. Juan Pérez)"];
 });
 
-prueba(4, 'Programar otra cita superpuesta para el mismo médico', 'El sistema impide el conflicto', function () use ($recep, $idMedico) {
+prueba(4, 'Programar otra cita superpuesta para el mismo médico', 'El sistema impide el conflicto', function () use ($recep, $idMedico, $idOtroPaciente) {
     $r = $recep->pedir('POST', '/citas', [
-        '_csrf' => $recep->token('/citas/nueva'), 'id_paciente' => 2, 'id_especialidad' => 1, 'id_medico' => $idMedico,
+        '_csrf' => $recep->token('/citas/nueva'), 'id_paciente' => $idOtroPaciente, 'id_especialidad' => 1, 'id_medico' => $idMedico,
         'fecha' => $GLOBALS['fechaCita'], 'hora_inicio' => $GLOBALS['horaCita'], 'modalidad' => 'presencial',
     ]);
     $m = mensajes($r['cuerpo']);
     return [str_contains($m, 'RN07'), $m];
 });
 
-prueba(5, 'Intentar reservar fuera del horario del médico', 'El sistema rechaza la cita', function () use ($recep, $idMedico) {
+prueba(5, 'Intentar reservar fuera del horario del médico', 'El sistema rechaza la cita', function () use ($recep, $idMedico, $idTercerPaciente) {
     $fecha = date('Y-m-d', strtotime('next monday'));
     $r = $recep->pedir('POST', '/citas', [
-        '_csrf' => $recep->token('/citas/nueva'), 'id_paciente' => 3, 'id_especialidad' => 1, 'id_medico' => $idMedico,
+        '_csrf' => $recep->token('/citas/nueva'), 'id_paciente' => $idTercerPaciente, 'id_especialidad' => 1, 'id_medico' => $idMedico,
         'fecha' => $fecha, 'hora_inicio' => '20:00', 'modalidad' => 'presencial',
     ]);
     $m = mensajes($r['cuerpo']);

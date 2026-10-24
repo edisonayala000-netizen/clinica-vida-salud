@@ -1,5 +1,5 @@
 <?php
-/** IU Bitácora de acciones (CU02): quién hizo qué, cuándo y desde qué IP. Solo lectura. */
+/** IU Bitácora de acciones (CU02): quién hizo qué, cuándo y desde qué IP, y qué datos cambió. Solo lectura. */
 $f = $filtros;
 $nombresAccion = [
     'inicio_sesion'    => 'Inicio de sesión',
@@ -8,15 +8,29 @@ $nombresAccion = [
     'cierre_sesion'    => 'Cierre de sesión',
     'operacion'        => 'Operación',
     'exportacion'      => 'Exportación',
+    'auditoria'        => 'Cambio de datos',
+    'recuperacion_solicitada' => 'Recuperación solicitada',
+    'recuperacion_rechazada'  => 'Recuperación rechazada',
+    'recuperacion_completada' => 'Contraseña restablecida',
 ];
+$nombresOperacion = ['INSERT' => 'Registro', 'UPDATE' => 'Modificación', 'DELETE' => 'Eliminación'];
+/* Valor de un campo auditado para mostrarlo (los JSON anidados se muestran compactos). */
+$valorDato = static fn (mixed $v): string => match (true) {
+    $v === null  => '—',
+    is_bool($v)  => $v ? 'sí' : 'no',
+    is_array($v) => json_encode($v, JSON_UNESCAPED_UNICODE),
+    default      => (string) $v,
+};
 $claseAccion = static function (array $r): string {
-    if (in_array($r['accion'], ['inicio_fallido', 'cuenta_bloqueada'], true) || str_contains((string) $r['detalle'], '· con error')) {
+    if (in_array($r['accion'], ['inicio_fallido', 'cuenta_bloqueada', 'recuperacion_rechazada'], true)
+        || str_contains((string) $r['detalle'], '· con error')) {
         return 'estado-cancelada';
     }
     return match ($r['accion']) {
-        'inicio_sesion' => 'estado-atendida',
+        'inicio_sesion', 'recuperacion_completada' => 'estado-atendida',
         'cierre_sesion' => 'estado-inactivo',
         'exportacion'   => 'estado-confirmada',
+        'auditoria'     => 'estado-inactivo',
         default         => 'estado-programada',
     };
 };
@@ -25,7 +39,7 @@ $params = ['usuario' => $f['usuario'], 'modulo' => $f['modulo'], 'accion' => $f[
 <div class="encabezado">
     <div class="encabezado-texto">
         <h1>Bitácora</h1>
-        <p>Registro de las acciones de los usuarios: inicios y cierres de sesión, intentos fallidos y cada operación realizada. No se puede modificar ni borrar.</p>
+        <p>Registro de las acciones de los usuarios: inicios y cierres de sesión, intentos fallidos, cada operación realizada y cada cambio de datos con sus valores de antes y de después. No se puede modificar ni borrar.</p>
     </div>
     <div class="acciones"><a class="boton boton-secundario" href="<?= e(url('/bitacora', $params + ['formato' => 'csv'])) ?>"><?= icono('descargar') ?>Exportar CSV</a></div>
 </div>
@@ -64,7 +78,24 @@ $params = ['usuario' => $f['usuario'], 'modulo' => $f['modulo'], 'accion' => $f[
                         <?php if ($r['nombre_completo']): ?><span class="celda-sub"><?= e($r['nombre_completo']) ?></span><?php endif; ?></td>
                     <td><span class="estado <?= $claseAccion($r) ?>"><?= e($nombresAccion[$r['accion']] ?? $r['accion']) ?></span></td>
                     <td><?= e(ucfirst($r['modulo'])) ?></td>
-                    <td class="celda-detalle"><?= e($r['detalle'] ?? '') ?></td>
+                    <td class="celda-detalle"><?= e($r['detalle'] ?? '') ?>
+                        <?php if ($r['tabla']):
+                            $antes = json_decode((string) $r['datos_antes'], true) ?? [];
+                            $despues = json_decode((string) $r['datos_despues'], true) ?? []; ?>
+                            <details class="cambios-datos">
+                                <summary><?= e(($nombresOperacion[$r['operacion']] ?? $r['operacion']) . ' en ' . $r['tabla']) ?> · ver datos</summary>
+                                <table>
+                                    <thead><tr><th>Campo</th><th>Antes</th><th>Después</th></tr></thead>
+                                    <tbody>
+                                    <?php foreach (array_unique(array_merge(array_keys($antes), array_keys($despues))) as $campo): ?>
+                                        <tr><td><?= e($campo) ?></td>
+                                            <td><?= e(array_key_exists($campo, $antes) ? $valorDato($antes[$campo]) : '—') ?></td>
+                                            <td><?= e(array_key_exists($campo, $despues) ? $valorDato($despues[$campo]) : '—') ?></td></tr>
+                                    <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </details>
+                        <?php endif; ?></td>
                     <td class="numero"><?= e($r['ip'] ?? '') ?></td>
                 </tr>
             <?php endforeach; ?>

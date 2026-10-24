@@ -14,6 +14,13 @@ $config = [
         'zona_horaria' => 'America/La_Paz',
         // true solo en desarrollo: muestra el detalle técnico de los errores.
         'depuracion'   => false,
+        // Dirección completa del sistema para los enlaces de los correos, incluida su carpeta
+        // (p. ej. http://localhost/clinica-vida-salud o https://clinica.ejemplo.com). Vacía = se toma de la
+        // petición actual; la tarea programada (sin navegador) la necesita o recibe --url.
+        'url'          => getenv('APP_URL') ?: '',
+        // Clave para firmar los enlaces de los correos (confirmar o cancelar cita, desactivar avisos).
+        // Vacía = se genera sola en storage/secreto.key (no se sube a GitHub).
+        'secreto'      => getenv('APP_SECRETO') ?: '',
     ],
 
     // Conexión PDO con el controlador pdo_pgsql (requerimiento técnico 7)
@@ -33,6 +40,35 @@ $config = [
     'seguridad' => [
         'max_intentos'    => 5,        // intentos fallidos antes de bloquear
         'minutos_bloqueo' => 15,
+    ],
+
+    // Correos del sistema con la API de Brevo (CU15 y recordatorios). La clave y el remitente
+    // verificado van en config.local.php. Sin clave, los correos solo se escriben en
+    // storage/logs/correos.log (modo de desarrollo).
+    'correo' => [
+        'api_key'   => '',
+        'remitente' => '',
+        'nombre'    => 'Clínica Vida Salud',
+        // A estos dominios reservados nunca se envía (datos de prueba): el correo va al log.
+        'dominios_sin_envio' => ['example.com', 'example.org', 'example.net', 'test', 'invalid', 'localhost'],
+        // Desarrollo: si tiene correos, SOLO a ellos se envía de verdad; los demás van al log.
+        // Vacía = sin restricción (producción). Ej. en config.local.php: 'solo_a' => ['mi.correo@gmail.com']
+        'solo_a' => [],
+    ],
+
+    // CU18 · Envío de notificaciones (tarea programada cada 5 minutos)
+    'notificaciones' => [
+        'limite_diario'    => 280,  // correos reales por día (Brevo gratis: 300); deja margen para recuperar contraseñas
+        'max_atraso_horas' => 6,    // un recordatorio con más atraso ya no se envía (se anula)
+        'max_intentos'     => 3,    // reintentos automáticos de un correo que falló
+        'por_ejecucion'    => 50,   // correos como máximo en cada ejecución de la tarea
+    ],
+
+    // CU15 · Recuperar contraseña
+    'recuperacion' => [
+        'minutos_vigencia'    => 30,   // vigencia del enlace enviado por correo
+        'max_por_hora_cuenta' => 3,    // solicitudes por cuenta en una hora
+        'max_por_hora_ip'     => 20,   // solicitudes desde una misma IP en una hora
     ],
 
     'citas' => [

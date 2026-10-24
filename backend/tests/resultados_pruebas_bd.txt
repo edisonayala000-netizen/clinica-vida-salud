@@ -4,7 +4,7 @@ BEGIN
 CREATE TABLE
 CREATE FUNCTION
 SELECT 1
-UPDATE 1
+UPDATE 0
 INSERT 0 1
  debe_fallar 
 -------------
@@ -83,31 +83,79 @@ INSERT 0 1
  
 (1 row)
 
+ debe_fallar 
+-------------
+ 
+(1 row)
+
+ debe_fallar 
+-------------
+ 
+(1 row)
+
+ debe_fallar 
+-------------
+ 
+(1 row)
+
+DO
+INSERT 0 1
+UPDATE 1
+ debe_fallar 
+-------------
+ 
+(1 row)
+
+ debe_fallar 
+-------------
+ 
+(1 row)
+
+ debe_fallar 
+-------------
+ 
+(1 row)
+
+DO
+INSERT 0 1
+DO
+DO
 
 ===================== RESULTADOS =====================
- N.º |                                 Prueba                                 |  Estado  |                                   Mensaje de PostgreSQL                                    
------+------------------------------------------------------------------------+----------+--------------------------------------------------------------------------------------------
-   1 | CI duplicado (UNIQUE uq_paciente_ci)                                   | APROBADA | llave duplicada viola restricción de unicidad «uq_paciente_ci»
-   2 | Cita superpuesta del mismo médico (EXCLUDE ex_cita_medico_sin_solape)  | APROBADA | llave en conflicto viola la restricción de exclusión «ex_cita_medico_sin_solape»
-   3 | Cita fuera del horario de atención (trigger RN05)                      | APROBADA | RN05: la cita está fuera del horario de atención del médico.
-   4 | Cita en fecha pasada (trigger RN06)                                    | APROBADA | RN06: no se pueden registrar citas en fechas u horas pasadas.
-   5 | Cita con médico inactivo (trigger RN04)                                | APROBADA | RN04: el médico está inactivo y no puede recibir nuevas citas.
-   6 | Médico con especialidad que no atiende (FK compuesta)                  | APROBADA | inserción o actualización en la tabla «cita» viola la llave foránea «fk_cita_medico_especi
-   7 | Cita cancelada marcada como atendida (trigger RF10)                    | APROBADA | RF10: transición no permitida de "cancelada" a "atendida".
-   8 | Borrado físico de una cita (trigger RN10)                              | APROBADA | RN10: los registros de cita no se eliminan; cambie su estado.
-   9 | Especialidad con el mismo nombre normalizado                           | APROBADA | llave duplicada viola restricción de unicidad «uq_especialidad_nombre_normalizado»
-  10 | Horario con hora final anterior a la inicial (CHECK)                   | APROBADA | el nuevo registro para la relación «horario_atencion» viola la restricción «check» «ck_hor
-  11 | Horario superpuesto del mismo médico (EXCLUDE)                         | APROBADA | llave en conflicto viola la restricción de exclusión «ex_horario_sin_solape»
-  12 | Eliminar un paciente con citas (FK RESTRICT, RN11)                     | APROBADA | update or delete on table "paciente" violates RESTRICT setting of foreign key constraint "
-  13 | Usuario con rol médico sin vincular a un médico (trigger RN12)         | APROBADA | RN12: un usuario con rol médico debe estar vinculado a un médico.
-  14 | Cancelar libera el horario y conserva el historial (RN09)              | APROBADA | Horario reutilizado; la cita cancelada tiene 2 registros de historial
-  15 | Borrar una fila de la bitácora (trigger fn_tg_bitacora_inalterable)    | APROBADA | La bitácora no se modifica ni se borra: solo se agregan registros.
-  16 | Modificar una fila de la bitácora (trigger fn_tg_bitacora_inalterable) | APROBADA | La bitácora no se modifica ni se borra: solo se agregan registros.
-(16 rows)
+ N.º |                                                Prueba                                                |  Estado  |                                   Mensaje de PostgreSQL                                    
+-----+------------------------------------------------------------------------------------------------------+----------+--------------------------------------------------------------------------------------------
+   1 | CI duplicado (UNIQUE uq_persona_ci)                                                                  | APROBADA | llave duplicada viola restricción de unicidad «uq_persona_ci»
+   2 | Cita superpuesta del mismo médico (EXCLUDE ex_cita_medico_sin_solape)                                | APROBADA | llave en conflicto viola la restricción de exclusión «ex_cita_medico_sin_solape»
+   3 | Cita fuera del horario de atención (trigger RN05)                                                    | APROBADA | RN05: la cita está fuera del horario de atención del médico.
+   4 | Cita en fecha pasada (trigger RN06)                                                                  | APROBADA | RN06: no se pueden registrar citas en fechas u horas pasadas.
+   5 | Cita con médico inactivo (trigger RN04)                                                              | APROBADA | RN04: el médico está inactivo y no puede recibir nuevas citas.
+   6 | Médico con especialidad que no atiende (FK compuesta)                                                | APROBADA | inserción o actualización en la tabla «cita» viola la llave foránea «fk_cita_medico_especi
+   7 | Cita cancelada marcada como atendida (catálogo estado_cita_transicion)                               | APROBADA | RF10: transición no permitida de "cancelada" a "atendida".
+   8 | Borrado físico de una cita (trigger RN10)                                                            | APROBADA | RN10: los registros de cita no se eliminan; cambie su estado.
+   9 | Especialidad con el mismo nombre normalizado                                                         | APROBADA | llave duplicada viola restricción de unicidad «uq_especialidad_nombre_normalizado»
+  10 | Horario con hora final anterior a la inicial (CHECK)                                                 | APROBADA | el nuevo registro para la relación «horario_atencion» viola la restricción «check» «ck_hor
+  11 | Horario superpuesto del mismo médico (EXCLUDE)                                                       | APROBADA | llave en conflicto viola la restricción de exclusión «ex_horario_sin_solape»
+  12 | Eliminar un paciente con citas (FK RESTRICT, RN11)                                                   | APROBADA | update or delete on table "paciente" violates RESTRICT setting of foreign key constraint "
+  13 | Usuario con rol médico que no es médico (trigger RN12)                                               | APROBADA | RN12: un usuario con rol médico debe pertenecer a un médico registrado.
+  14 | Cancelar libera el horario y conserva el historial (RN09)                                            | APROBADA | Horario reutilizado; la cita cancelada tiene 2 registros de historial
+  15 | Borrar una fila de la bitácora (trigger fn_tg_bitacora_inalterable)                                  | APROBADA | La bitácora no se modifica ni se borra: solo se agregan registros.
+  16 | Modificar una fila de la bitácora (trigger fn_tg_bitacora_inalterable)                               | APROBADA | La bitácora no se modifica ni se borra: solo se agregan registros.
+  17 | Paciente sin fecha de nacimiento ni sexo (trigger fn_validar_datos_persona)                          | APROBADA | RF02: un paciente debe tener fecha de nacimiento, sexo y teléfono.
+  18 | Dos médicos con el mismo correo (trigger fn_validar_datos_persona)                                   | APROBADA | RF03: ya existe un médico con ese correo.
+  19 | Historial con un estado que no existe en el catálogo (FK estado_cita)                                | APROBADA | inserción o actualización en la tabla «cita_historial» viola la llave foránea «cita_histor
+  20 | Auditoría: guarda antes/después y omite la contraseña (fn_tg_auditoria)                              | APROBADA | Modificó persona #11: telefono · antes {"telefono": "76233445"} → después {"telefono": "79
+  21 | Usar dos veces el mismo enlace de recuperación (trigger fn_tg_token_un_uso)                          | APROBADA | Este enlace de recuperación ya fue usado. Solicite uno nuevo.
+  22 | Registrar la atención de una cita no atendida (trigger RF12)                                         | APROBADA | RF12: solo se registra la atención de una cita atendida.
+  23 | Presión sistólica menor que la diastólica (CHECK ck_signo_presion)                                   | APROBADA | el nuevo registro para la relación «signo_vital» viola la restricción «check» «ck_signo_pr
+  24 | Receta cada 8 h por 2 días programa 6 recordatorios (trigger fn_tg_programar_tomas)                  | APROBADA | 6 correos de toma programados
+  25 | Cancelar una cita anula su recordatorio (trigger fn_tg_recordatorio_cita)                            | APROBADA | 1 recordatorio(s): anulada
+  26 | Preferencia de recordatorio de citas: 24h y 1h → solo 1h → ninguno (fn_tg_preferencia_recordatorios) | APROBADA | 24h_1h: recordatorio_cita, recordatorio_cita_1h · 1h: recordatorio_cita_1h · ninguno: 0 pe
+  27 | Desactivar y reactivar los recordatorios de medicamentos (fn_programar_tomas)                        | APROBADA | Tomas pendientes: 6 → al desactivar 0 → al reactivar 6
+(27 rows)
 
           Resumen           
 ----------------------------
- 16 de 16 pruebas aprobadas
+ 27 de 27 pruebas aprobadas
 (1 row)
 
 ROLLBACK

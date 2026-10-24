@@ -27,7 +27,8 @@ use Throwable;
  * Paquete.........: seguridad
  * Actores.........: Usuario
  * Requisitos......: RF01
- * Base de datos...: usuario, rol, permiso, rol_permiso, bitacora (ingresos, intentos fallidos, bloqueos y salidas)
+ * Base de datos...: usuario (vista v_usuario), rol, permiso, rol_permiso, bitacora (ingresos, intentos fallidos,
+ *                   bloqueos y salidas)
  * Rutas...........: GET /login (público) · POST /login (público) · POST /salir (con sesión) · GET/POST
  *                   /cuenta/clave (con sesión)
  * Vistas..........: frontend/vistas/seguridad/login.php, frontend/vistas/seguridad/cambiar_clave.php,

@@ -5,6 +5,8 @@ use App\Nucleo\BaseDatos;
 
 /**
  * Acceso a datos de PACIENTE y CONTACTO_EMERGENCIA.
+ * Los datos personales están en PERSONA (generalización) y los médicos en
+ * PACIENTE; las consultas leen ambos juntos desde la vista v_paciente.
  */
 final class PacienteModelo
 {
@@ -30,13 +32,13 @@ final class PacienteModelo
             $where .= " AND p.estado = :estado";
             $p['estado'] = $estado;
         }
-        $total = (int) BaseDatos::valor("SELECT count(*) FROM paciente p" . $where, $p);
+        $total = (int) BaseDatos::valor("SELECT count(*) FROM v_paciente p" . $where, $p);
         $filas = BaseDatos::todos(
             "SELECT p.*,
                     (SELECT max(c.fecha) FROM cita c WHERE c.id_paciente = p.id_paciente AND c.estado = 'atendida') AS ultima_atencion,
                     (SELECT min(c.fecha) FROM cita c WHERE c.id_paciente = p.id_paciente AND c.fecha >= CURRENT_DATE
                         AND c.estado IN ('programada','confirmada')) AS proxima_cita
-               FROM paciente p" . $where . "
+               FROM v_paciente p" . $where . "
               ORDER BY p.estado, p.apellidos, p.nombres
               LIMIT :lim OFFSET :off",
             $p + ['lim' => self::POR_PAGINA, 'off' => ($pagina - 1) * self::POR_PAGINA]
@@ -49,7 +51,7 @@ final class PacienteModelo
     {
         return BaseDatos::todos(
             "SELECT id_paciente, codigo, ci, nombres, apellidos, telefono, fecha_nacimiento
-               FROM paciente
+               FROM v_paciente
               WHERE estado = 'activo'
                 AND (ci ILIKE :t OR codigo ILIKE :t
                      OR fn_normalizar_texto(nombres || ' ' || apellidos) LIKE '%' || fn_normalizar_texto(:n) || '%'
@@ -62,8 +64,8 @@ final class PacienteModelo
     public function obtener(int $id): ?array
     {
         return BaseDatos::uno(
-            "SELECT p.*, (SELECT u.nombre_usuario FROM usuario u WHERE u.id_paciente = p.id_paciente) AS cuenta
-               FROM paciente p WHERE p.id_paciente = :id",
+            "SELECT p.*, (SELECT u.nombre_usuario FROM v_usuario u WHERE u.id_paciente = p.id_paciente) AS cuenta
+               FROM v_paciente p WHERE p.id_paciente = :id",
             ['id' => $id]
         );
     }
@@ -71,8 +73,8 @@ final class PacienteModelo
     public function porCi(string $ci): ?array
     {
         return BaseDatos::uno(
-            "SELECT p.*, EXISTS (SELECT 1 FROM usuario u WHERE u.id_paciente = p.id_paciente) AS tiene_cuenta
-               FROM paciente p WHERE p.ci = :ci",
+            "SELECT p.*, EXISTS (SELECT 1 FROM usuario u WHERE u.id_persona = p.id_paciente) AS tiene_cuenta
+               FROM v_paciente p WHERE p.ci = :ci",
             ['ci' => $ci]
         );
     }
@@ -80,35 +82,54 @@ final class PacienteModelo
     public function existeCi(string $ci, ?int $excluirId = null): bool
     {
         return (bool) BaseDatos::valor(
-            "SELECT EXISTS (SELECT 1 FROM paciente WHERE ci = :ci AND id_paciente <> :id)",
+            "SELECT EXISTS (SELECT 1 FROM v_paciente WHERE ci = :ci AND id_paciente <> :id)",
             ['ci' => $ci, 'id' => $excluirId ?? 0]
         );
     }
 
-    private const CAMPOS = ['ci', 'nombres', 'apellidos', 'fecha_nacimiento', 'sexo', 'telefono', 'correo', 'direccion',
-                            'tipo_sangre', 'alergias', 'enfermedades_cronicas', 'medicamentos', 'antecedentes'];
+    /** Columnas de PERSONA (datos personales) y de PACIENTE (datos médicos y preferencias). */
+    private const CAMPOS_PERSONA = ['ci', 'nombres', 'apellidos', 'fecha_nacimiento', 'sexo', 'telefono', 'correo', 'direccion'];
+    private const CAMPOS_PACIENTE = ['tipo_sangre', 'alergias', 'enfermedades_cronicas', 'medicamentos', 'antecedentes',
+                                     'recordatorio_cita', 'recordar_medicamentos', 'compartir_info_medica'];
 
+    /** Registra la persona y luego su subtipo paciente (llamar dentro de una transacción). */
     public function crear(array $d): int
     {
-        $campos = array_values(array_filter(self::CAMPOS, static fn ($c) => array_key_exists($c, $d)));
-        $sql = 'INSERT INTO paciente (' . implode(', ', $campos) . ') VALUES (:'
-             . implode(', :', $campos) . ') RETURNING id_paciente';
-        return (int) BaseDatos::valor($sql, array_intersect_key($d, array_flip($campos)));
+        $campos = self::presentes(self::CAMPOS_PERSONA, $d);
+        $id = (int) BaseDatos::valor(
+            'INSERT INTO persona (' . implode(', ', $campos) . ') VALUES (:' . implode(', :', $campos) . ') RETURNING id_persona',
+            array_intersect_key($d, array_flip($campos))
+        );
+        $campos = self::presentes(self::CAMPOS_PACIENTE, $d);
+        BaseDatos::ejecutar(
+            'INSERT INTO paciente (' . implode(', ', ['id_paciente', ...$campos]) . ') VALUES (:'
+            . implode(', :', ['id_paciente', ...$campos]) . ')',
+            ['id_paciente' => $id] + array_intersect_key($d, array_flip($campos))
+        );
+        return $id;
     }
 
-    /** Actualiza solo los campos presentes en $d. */
+    /** Actualiza solo los campos presentes en $d (en PERSONA y/o en PACIENTE). */
     public function actualizar(int $id, array $d): void
     {
-        $permitidos = array_merge(self::CAMPOS, ['recibir_recordatorios', 'compartir_info_medica']);
-        $campos = array_values(array_filter($permitidos, static fn ($c) => array_key_exists($c, $d)));
-        if (!$campos) {
-            return;
+        foreach (['persona' => [self::CAMPOS_PERSONA, 'id_persona'], 'paciente' => [self::CAMPOS_PACIENTE, 'id_paciente']]
+                 as $tabla => [$permitidos, $llave]) {
+            $campos = self::presentes($permitidos, $d);
+            if (!$campos) {
+                continue;
+            }
+            $sets = implode(', ', array_map(static fn ($c) => "$c = :$c", $campos));
+            BaseDatos::ejecutar(
+                "UPDATE $tabla SET $sets WHERE $llave = :id",
+                array_intersect_key($d, array_flip($campos)) + ['id' => $id]
+            );
         }
-        $sets = implode(', ', array_map(static fn ($c) => "$c = :$c", $campos));
-        BaseDatos::ejecutar(
-            "UPDATE paciente SET $sets WHERE id_paciente = :id",
-            array_intersect_key($d, array_flip($campos)) + ['id' => $id]
-        );
+    }
+
+    /** @return array<int,string> columnas de $permitidos que vienen en $d */
+    private static function presentes(array $permitidos, array $d): array
+    {
+        return array_values(array_filter($permitidos, static fn ($c) => array_key_exists($c, $d)));
     }
 
     public function cambiarEstado(int $id, string $estado): void

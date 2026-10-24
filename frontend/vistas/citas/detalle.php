@@ -20,6 +20,10 @@ $accionesHistorial = ['registro' => 'Cita registrada', 'cambio_estado' => 'Cambi
             <form method="post" action="<?= e(url('/citas/' . $c['id_cita'] . '/estado')) ?>"><?= csrf_campo() ?><input type="hidden" name="estado" value="confirmada">
                 <button class="boton boton-secundario" type="submit"><?= icono('check') ?>Confirmar asistencia</button></form>
         <?php endif; ?>
+        <?php if (!$atencion && Autenticacion::puede('atencion.registrar') && ($c['estado'] === 'atendida' || in_array('atendida', $acciones, true))
+                  && (int) ($u['id_medico'] ?? 0) === (int) $c['id_medico']): ?>
+            <a class="boton boton-primario" href="<?= e(url('/citas/' . $c['id_cita'] . '/atencion')) ?>"><?= icono('pulso') ?>Atender</a>
+        <?php endif; ?>
         <?php if (in_array('atendida', $acciones, true) && Autenticacion::puede('citas.atender')): ?>
             <form method="post" action="<?= e(url('/citas/' . $c['id_cita'] . '/estado')) ?>" data-confirmar="¿Marcar la cita <?= e($c['codigo']) ?> como atendida? Es un estado final." data-confirmar-boton="Marcar atendida">
                 <?= csrf_campo() ?><input type="hidden" name="estado" value="atendida">
@@ -85,6 +89,33 @@ $accionesHistorial = ['registro' => 'Cita registrada', 'cambio_estado' => 'Cambi
         </section>
         <?php endif; ?>
     </div>
+    <div class="columna">
+    <?php if ($atencion): ?>
+    <section class="tarjeta">
+        <header class="tarjeta-cabecera"><h2>Atención médica</h2>
+            <?php if ($atencion['id_receta']): ?><div class="acciones"><a class="boton boton-secundario boton-chico" href="<?= e(url('/recetas/' . $atencion['id_receta'])) ?>"><?= icono('reporte') ?>Receta <?= e($atencion['codigo_receta']) ?></a></div><?php endif; ?>
+        </header>
+        <div class="tarjeta-cuerpo">
+            <dl class="datos">
+                <dt>Diagnóstico</dt><dd><?= e($atencion['diagnostico']) ?></dd>
+                <?php if ($atencion['tratamiento']): ?><dt>Tratamiento</dt><dd><?= e($atencion['tratamiento']) ?></dd><?php endif; ?>
+                <?php if ($atencion['observaciones']): ?><dt>Observaciones</dt><dd><?= e($atencion['observaciones']) ?></dd><?php endif; ?>
+                <?php foreach ($signos as $s): ?>
+                    <dt>Signos vitales</dt><dd><?= e(implode(' · ', array_filter([
+                        $s['peso_kg'] !== null ? rtrim(rtrim((string) $s['peso_kg'], '0'), '.') . ' kg' : null,
+                        $s['talla_cm'] !== null ? rtrim(rtrim((string) $s['talla_cm'], '0'), '.') . ' cm' : null,
+                        $s['imc'] !== null ? 'IMC ' . $s['imc'] : null,
+                        $s['presion_arterial'] !== null ? 'PA ' . $s['presion_arterial'] . ' mmHg' : null,
+                        $s['temperatura_c'] !== null ? $s['temperatura_c'] . ' °C' : null,
+                        $s['frecuencia_cardiaca'] !== null ? $s['frecuencia_cardiaca'] . ' lpm' : null,
+                        $s['saturacion_o2'] !== null ? 'SatO₂ ' . $s['saturacion_o2'] . ' %' : null,
+                    ]))) ?></dd>
+                <?php endforeach; ?>
+            </dl>
+            <p class="celda-sub">Registrada el <?= e(fecha_hora($atencion['fecha_registro'])) ?><?= $atencion['registrado_por'] ? ' por ' . e($atencion['registrado_por']) : '' ?>.</p>
+        </div>
+    </section>
+    <?php endif; ?>
     <section class="tarjeta">
         <header class="tarjeta-cabecera"><h2>Historial de la cita</h2></header>
         <div class="tarjeta-cuerpo">
@@ -104,6 +135,7 @@ $accionesHistorial = ['registro' => 'Cita registrada', 'cambio_estado' => 'Cambi
             </ol>
         </div>
     </section>
+    </div>
 </div>
 
 <dialog class="modal" id="modal-cancelar" aria-labelledby="t-cancelar">

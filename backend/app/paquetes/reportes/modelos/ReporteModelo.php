@@ -62,7 +62,7 @@ final class ReporteModelo
             "SELECT p.codigo, p.ci, p.nombres || ' ' || p.apellidos AS paciente, p.sexo, p.fecha_nacimiento,
                     p.telefono, p.estado, p.creado_en,
                     (SELECT count(*) FROM cita c WHERE c.id_paciente = p.id_paciente) AS citas
-               FROM paciente p
+               FROM v_paciente p
               WHERE p.creado_en::DATE BETWEEN CAST(:a AS DATE) AND CAST(:b AS DATE)
               ORDER BY p.creado_en DESC",
             ['a' => $desde, 'b' => $hasta]

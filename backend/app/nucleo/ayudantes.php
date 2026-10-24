@@ -23,6 +23,23 @@ function url(string $ruta = '/', array $parametros = []): string
     return $u === '' ? '/' : $u;
 }
 
+/**
+ * URL completa para enlaces que se abren fuera del sistema (los de los correos):
+ * app.url (APP_URL) si está configurada; si no, la dirección de la petición actual.
+ */
+function url_absoluta(string $ruta, array $parametros = []): string
+{
+    $configurada = rtrim((string) Aplicacion::config('app.url', ''), '/');
+    if ($configurada === '') {
+        return Peticion::origen() . url($ruta, $parametros);
+    }
+    $u = $configurada . '/' . ltrim($ruta, '/');
+    if ($parametros) {
+        $u .= '?' . http_build_query(array_filter($parametros, static fn ($v) => $v !== null && $v !== ''));
+    }
+    return $u;
+}
+
 /** URL de un archivo estático de frontend/assets con versión para caché. */
 function recurso(string $archivo): string
 {

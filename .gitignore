@@ -16,3 +16,10 @@ desktop.ini
 # Editores
 .vscode/
 .idea/
+
+# Proyecto de Enterprise Architect (local) y su archivo de bloqueo
+doc/*.eapx
+doc/*.ldb
+
+# Clave que firma los enlaces de los correos (se genera sola)
+backend/storage/secreto.key

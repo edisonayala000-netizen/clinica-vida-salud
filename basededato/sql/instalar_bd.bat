@@ -16,6 +16,9 @@ if errorlevel 1 (
   )
 )
 echo Usando: %PSQL%
+set "PGPORT="
+set /p PGPORT=Puerto de PostgreSQL (Enter = 5432): 
+if "%PGPORT%"=="" set "PGPORT=5432"
 set /p PGPASSWORD=Contraseña del usuario postgres: 
 
 "%PSQL%" -U postgres -h localhost -c "DROP DATABASE IF EXISTS clinica_vida_salud" || goto error

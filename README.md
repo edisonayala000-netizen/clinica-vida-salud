@@ -10,7 +10,7 @@ Segundo Examen Parcial — Sistemas de Información I (SA) — UAGRM, FICCT · *
 
 | Carpeta | Contenido | Guía |
 |---|---|---|
-| `basededato/sql/` | Base de datos PostgreSQL: 14 tablas (incluida la bitácora), restricciones `CHECK`/`UNIQUE`/`EXCLUDE`, 7 funciones de trigger, 3 vistas, datos de prueba y 16 pruebas | [LEEME.md](basededato/sql/LEEME.md) |
+| `basededato/sql/` | Base de datos PostgreSQL: 24 tablas (PERSONA como generalización de paciente y médico, bitácora con auditoría, atención médica y notificaciones), restricciones `CHECK`/`UNIQUE`/`EXCLUDE`, 15 funciones de trigger, 8 vistas, datos de prueba y 27 pruebas | [LEEME.md](basededato/sql/LEEME.md) |
 | `backend/` | PHP 8 sin frameworks: **toda la lógica de negocio**, un archivo por caso de uso, acceso a datos con PDO, login y permisos | [README.md](backend/README.md) |
 | `frontend/` | Interfaz: vistas HTML5 por paquete, CSS3 y JavaScript | [README.md](frontend/README.md) |
 | `doc/` | Documento del proyecto (.docx y .pdf), diagramas StarUML, capturas, guía de defensa y prompt para Claude Code | [README.md](doc/README.md) |
@@ -48,11 +48,13 @@ por caso de uso en `backend/app/paquetes/<paquete>/casos_uso/` y sus pantallas e
 
 | Paquete | Casos de uso |
 |---|---|
-| `seguridad` | CU01 Iniciar sesión · CU02 Gestionar usuarios y permisos (incluye la bitácora de acciones) |
+| `seguridad` | CU01 Iniciar sesión · CU02 Gestionar usuarios y permisos (incluye la bitácora de acciones) · CU15 Recuperar contraseña por correo |
 | `pacientes` | CU03 Gestionar pacientes · CU04 Gestionar perfil del paciente · CU05 Consultar historial de citas |
 | `medicos` | CU06 Gestionar especialidades · CU07 Gestionar médicos · CU08 Gestionar horarios de atención |
 | `citas` | CU09 Programar cita · CU10 Reprogramar cita · CU11 Cancelar cita · CU12 Registrar asistencia · CU13 Consultar agenda médica (diaria y semanal) |
 | `reportes` | CU14 Generar reportes |
+| `atencion` | CU16 Registrar atención médica (diagnóstico, signos vitales y receta) · CU17 Consultar mis recetas · CU19 Gestionar medicamentos |
+| `notificaciones` | CU18 Enviar notificaciones: confirmación de citas, receta, recordatorios de citas y de medicamentos; confirmar, cancelar o desactivar avisos desde el correo |
 | `inicio` | Panel principal según el rol |
 
 ## Puesta en marcha en Windows (XAMPP)
@@ -65,7 +67,10 @@ por caso de uso en `backend/app/paquetes/<paquete>/casos_uso/` y sus pantallas e
    ```php
    <?php return ['bd' => ['clave' => 'SU_CLAVE']];
    ```
-5. **Abrir:** <http://localhost/clinica-vida-salud> — usuario `admin`, contraseña `Clinica2026*`.
+5. **Correo (opcional):** para que «¿Olvidó su contraseña?» envíe correos reales, agregue la clave de Brevo a
+   `config.local.php` (paso a paso en [backend/README.md](backend/README.md#correo-brevo)). Sin clave, los correos
+   se escriben en `backend\storage\logs\correos.log`.
+6. **Abrir:** <http://localhost/clinica-vida-salud> — usuario `admin`, contraseña `Clinica2026*`.
 
 Sin Apache (desde la carpeta raíz): `php -S localhost:8000 backend/public/router.php` → <http://localhost:8000>
 
@@ -84,7 +89,13 @@ Sin Apache (desde la carpeta raíz): `php -S localhost:8000 backend/public/route
 :: 10 pruebas del examen (con el sistema encendido)
 php backend\tests\pruebas_sistema.php http://localhost/clinica-vida-salud
 
-:: 16 pruebas de restricciones y triggers (no dejan cambios en la base)
+:: 7 pruebas de CU15 Recuperar contraseña (no envían correos reales)
+php backend\tests\pruebas_recuperacion.php http://localhost/clinica-vida-salud
+
+:: 15 pruebas de atención médica, recetas, recordatorios y medicamentos (CU16 a CU19)
+php backend\tests\pruebas_atencion.php http://localhost/clinica-vida-salud
+
+:: 27 pruebas de restricciones y triggers (no dejan cambios en la base)
 psql -U postgres -d clinica_vida_salud -f basededato\sql\pruebas\pruebas_bd.sql
 ```
 
