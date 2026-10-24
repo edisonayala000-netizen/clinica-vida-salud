@@ -22,10 +22,15 @@ RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
 
 # Apache: .htaccess activo, https detrás del proxy de Railway e IP real del visitante.
 COPY docker/apache-clinica.conf /etc/apache2/conf-available/clinica.conf
-RUN a2enmod rewrite remoteip && a2enconf clinica
+# PHP como módulo de Apache necesita mpm_prefork: los otros MPM se desactivan
+# (con más de uno cargado Apache no arranca: "AH00534: More than one MPM loaded").
+RUN (a2dismod -f mpm_event mpm_worker || true) \
+ && a2enmod mpm_prefork rewrite remoteip \
+ && a2enconf clinica
 
 COPY . /var/www/html/
 RUN chown -R www-data:www-data /var/www/html/backend/storage
 
-# Railway indica el puerto en la variable PORT; en otra máquina se usa el 80.
-CMD ["sh", "-c", "sed -i \"s/^Listen .*/Listen ${PORT:-80}/\" /etc/apache2/ports.conf && sed -i \"s/<VirtualHost \\*:[0-9]*>/<VirtualHost *:${PORT:-80}>/\" /etc/apache2/sites-available/000-default.conf && exec apache2-foreground"]
+# Al arrancar: se asegura un solo MPM (prefork) y Apache escucha el puerto que indica Railway
+# en la variable PORT; en otra máquina se usa el 80.
+CMD ["sh", "-c", "rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.* && sed -i \"s/^Listen .*/Listen ${PORT:-80}/\" /etc/apache2/ports.conf && sed -i \"s/<VirtualHost \\*:[0-9]*>/<VirtualHost *:${PORT:-80}>/\" /etc/apache2/sites-available/000-default.conf && exec apache2-foreground"]
