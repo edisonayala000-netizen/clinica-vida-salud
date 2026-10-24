@@ -441,55 +441,70 @@ CREATE TRIGGER tg_atencion_validar
     FOR EACH ROW EXECUTE FUNCTION fn_tg_validar_atencion();
 
 -- ---------------------------------------------------------------------
--- 12) Recordatorio de la cita por correo, 24 horas antes.
---     Se programa al registrar la cita (si el paciente tiene correo y
---     acepta recordatorios), se mueve si la cita se reprograma y se anula
---     si la cita se cancela o se cierra. Si faltan menos de 2 horas, no
---     se programa.
+-- 12) Recordatorios de la cita por correo, según la preferencia del
+--     paciente (recordatorio_cita): ninguno, 1h, 24h o 24h_1h antes.
+--     · 24 h antes: con los botones Confirmar / Cancelar; solo si faltan
+--       más de 2 horas (antes de eso ya no se puede cancelar en línea).
+--     · 1 h antes: solo un aviso.
+--     fn_programar_recordatorios_cita anula los pendientes de la cita y los
+--     vuelve a programar; la usan el trigger de la cita y el cambio de
+--     preferencia del paciente.
 -- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_programar_recordatorios_cita(p_id_cita INTEGER)
+RETURNS VOID LANGUAGE plpgsql AS $$
+DECLARE
+    v_cita    cita%ROWTYPE;
+    v_correo  VARCHAR(120);
+    v_pref    VARCHAR(8);
+    v_inicio  TIMESTAMPTZ;
+BEGIN
+    UPDATE notificacion SET estado = 'anulada'
+     WHERE id_cita = p_id_cita AND tipo IN ('recordatorio_cita','recordatorio_cita_1h') AND estado = 'pendiente';
+
+    IF current_setting('app.sin_notificaciones', TRUE) = 'on' THEN
+        RETURN;
+    END IF;
+
+    SELECT * INTO v_cita FROM cita WHERE id_cita = p_id_cita;
+    IF NOT FOUND OR (SELECT es_final FROM estado_cita WHERE codigo = v_cita.estado) THEN
+        RETURN;                      -- cancelada o cerrada: no se recuerda
+    END IF;
+
+    SELECT pa.recordatorio_cita, pe.correo INTO v_pref, v_correo
+      FROM paciente pa JOIN persona pe ON pe.id_persona = pa.id_paciente
+     WHERE pa.id_paciente = v_cita.id_paciente;
+    IF v_pref = 'ninguno' OR v_correo IS NULL THEN
+        RETURN;
+    END IF;
+
+    v_inicio := (v_cita.fecha + v_cita.hora_inicio)::TIMESTAMPTZ;
+
+    IF v_pref IN ('24h','24h_1h') AND v_inicio - now() > INTERVAL '2 hours' THEN
+        INSERT INTO notificacion (tipo, id_persona, correo_destino, asunto, id_cita, programada_para)
+        VALUES ('recordatorio_cita', v_cita.id_paciente, v_correo,
+                format('Recordatorio: su cita %s es el %s a las %s', v_cita.codigo,
+                       to_char(v_cita.fecha, 'DD/MM/YYYY'), to_char(v_cita.hora_inicio, 'HH24:MI')),
+                v_cita.id_cita, greatest(now(), v_inicio - INTERVAL '24 hours'));
+    END IF;
+
+    IF v_pref IN ('1h','24h_1h') AND v_inicio - now() > INTERVAL '1 hour' THEN
+        INSERT INTO notificacion (tipo, id_persona, correo_destino, asunto, id_cita, programada_para)
+        VALUES ('recordatorio_cita_1h', v_cita.id_paciente, v_correo,
+                format('Su cita %s es en 1 hora (%s)', v_cita.codigo, to_char(v_cita.hora_inicio, 'HH24:MI')),
+                v_cita.id_cita, v_inicio - INTERVAL '1 hour');
+    END IF;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION fn_tg_recordatorio_cita()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
-DECLARE
-    v_inicio  TIMESTAMPTZ := (NEW.fecha + NEW.hora_inicio)::TIMESTAMPTZ;
-    v_envio   TIMESTAMPTZ := greatest(now(), (NEW.fecha + NEW.hora_inicio)::TIMESTAMPTZ - INTERVAL '24 hours');
-    v_persona persona%ROWTYPE;
 BEGIN
-    IF current_setting('app.sin_notificaciones', TRUE) = 'on' THEN
+    -- Un cambio de estado que no cierra la cita (p. ej. confirmarla) no mueve los recordatorios.
+    IF TG_OP = 'UPDATE' AND NEW.fecha = OLD.fecha AND NEW.hora_inicio = OLD.hora_inicio
+       AND NOT (SELECT es_final FROM estado_cita WHERE codigo = NEW.estado) THEN
         RETURN NULL;
     END IF;
-
-    -- La cita se canceló o se cerró: su recordatorio pendiente ya no se envía.
-    IF TG_OP = 'UPDATE' AND NEW.estado <> OLD.estado
-       AND (NEW.estado = 'cancelada' OR (SELECT es_final FROM estado_cita WHERE codigo = NEW.estado)) THEN
-        UPDATE notificacion SET estado = 'anulada'
-         WHERE id_cita = NEW.id_cita AND tipo = 'recordatorio_cita' AND estado = 'pendiente';
-        RETURN NULL;
-    END IF;
-
-    IF TG_OP = 'UPDATE' AND NEW.fecha = OLD.fecha AND NEW.hora_inicio = OLD.hora_inicio THEN
-        RETURN NULL;
-    END IF;
-
-    -- Reprogramación: se anula el recordatorio anterior y se crea uno nuevo.
-    IF TG_OP = 'UPDATE' THEN
-        UPDATE notificacion SET estado = 'anulada'
-         WHERE id_cita = NEW.id_cita AND tipo = 'recordatorio_cita' AND estado = 'pendiente';
-    END IF;
-
-    IF v_inicio - now() < INTERVAL '2 hours' THEN
-        RETURN NULL;
-    END IF;
-
-    SELECT pe.* INTO v_persona
-      FROM paciente pa JOIN persona pe ON pe.id_persona = pa.id_paciente
-     WHERE pa.id_paciente = NEW.id_paciente AND pa.recibir_recordatorios AND pe.correo IS NOT NULL;
-    IF FOUND THEN
-        INSERT INTO notificacion (tipo, id_persona, correo_destino, asunto, id_cita, programada_para)
-        VALUES ('recordatorio_cita', v_persona.id_persona, v_persona.correo,
-                format('Recordatorio: su cita %s es el %s a las %s', NEW.codigo,
-                       to_char(NEW.fecha, 'DD/MM/YYYY'), to_char(NEW.hora_inicio, 'HH24:MI')),
-                NEW.id_cita, v_envio);
-    END IF;
+    PERFORM fn_programar_recordatorios_cita(NEW.id_cita);
     RETURN NULL;
 END;
 $$;
@@ -499,53 +514,64 @@ CREATE TRIGGER tg_cita_recordatorio
     FOR EACH ROW EXECUTE FUNCTION fn_tg_recordatorio_cita();
 
 -- ---------------------------------------------------------------------
--- 13) Recordatorios de tomar el medicamento: al agregar un medicamento a
---     la receta se programa un correo por cada toma futura (como máximo
---     90 por medicamento), si el paciente tiene correo y los acepta.
+-- 13) Recordatorios de tomar el medicamento: un correo por cada toma
+--     futura (como máximo 90 por medicamento), si el medicamento tiene
+--     «recordar» y el paciente acepta recordatorios de medicamentos.
+--     fn_programar_tomas anula las tomas pendientes del medicamento y las
+--     vuelve a programar; la usan el trigger de la receta y el cambio de
+--     preferencia del paciente.
 -- ---------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION fn_tg_programar_tomas()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION fn_programar_tomas(p_id_detalle INTEGER)
+RETURNS VOID LANGUAGE plpgsql AS $$
 DECLARE
-    v_persona     persona%ROWTYPE;
+    v_detalle     receta_detalle%ROWTYPE;
+    v_persona     INTEGER;
+    v_correo      VARCHAR(120);
     v_medicamento TEXT;
     v_tomas       INTEGER;
 BEGIN
+    UPDATE notificacion SET estado = 'anulada'
+     WHERE id_detalle = p_id_detalle AND tipo = 'toma_medicamento' AND estado = 'pendiente';
+
     IF current_setting('app.sin_notificaciones', TRUE) = 'on' THEN
-        RETURN NULL;
+        RETURN;
     END IF;
 
-    -- Se desactivó el recordatorio: se anulan las tomas pendientes.
-    IF TG_OP = 'UPDATE' THEN
-        UPDATE notificacion SET estado = 'anulada'
-         WHERE id_detalle = NEW.id_detalle AND estado = 'pendiente';
-    END IF;
-    IF NOT NEW.recordar THEN
-        RETURN NULL;
+    SELECT * INTO v_detalle FROM receta_detalle WHERE id_detalle = p_id_detalle;
+    IF NOT FOUND OR NOT v_detalle.recordar THEN
+        RETURN;
     END IF;
 
-    SELECT pe.* INTO v_persona
+    SELECT pe.id_persona, pe.correo INTO v_persona, v_correo
       FROM receta r
       JOIN atencion a  ON a.id_atencion = r.id_atencion
       JOIN cita c      ON c.id_cita = a.id_cita
       JOIN paciente pa ON pa.id_paciente = c.id_paciente
       JOIN persona pe  ON pe.id_persona = pa.id_paciente
-     WHERE r.id_receta = NEW.id_receta AND pa.recibir_recordatorios AND pe.correo IS NOT NULL;
+     WHERE r.id_receta = v_detalle.id_receta AND pa.recordar_medicamentos AND pe.correo IS NOT NULL;
     IF NOT FOUND THEN
-        RETURN NULL;
+        RETURN;
     END IF;
 
     SELECT m.nombre || COALESCE(' ' || m.concentracion, '') INTO v_medicamento
-      FROM medicamento m WHERE m.id_medicamento = NEW.id_medicamento;
-    v_tomas := least(90, NEW.duracion_dias * 24 / NEW.frecuencia_horas);
+      FROM medicamento m WHERE m.id_medicamento = v_detalle.id_medicamento;
+    v_tomas := least(90, v_detalle.duracion_dias * 24 / v_detalle.frecuencia_horas);
 
     INSERT INTO notificacion (tipo, id_persona, correo_destino, asunto, id_receta, id_detalle, programada_para)
-    SELECT 'toma_medicamento', v_persona.id_persona, v_persona.correo,
-           format('Hora de su medicamento: %s (%s)', v_medicamento, NEW.dosis),
-           NEW.id_receta, NEW.id_detalle, t.momento
-      FROM (SELECT (NEW.fecha_inicio + NEW.hora_primera_toma)::TIMESTAMPTZ
-                   + make_interval(hours => k * NEW.frecuencia_horas) AS momento
+    SELECT 'toma_medicamento', v_persona, v_correo,
+           format('Hora de su medicamento: %s (%s)', v_medicamento, v_detalle.dosis),
+           v_detalle.id_receta, v_detalle.id_detalle, t.momento
+      FROM (SELECT (v_detalle.fecha_inicio + v_detalle.hora_primera_toma)::TIMESTAMPTZ
+                   + make_interval(hours => k * v_detalle.frecuencia_horas) AS momento
               FROM generate_series(0, v_tomas - 1) k) t
      WHERE t.momento > now();
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION fn_tg_programar_tomas()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+    PERFORM fn_programar_tomas(NEW.id_detalle);
     RETURN NULL;
 END;
 $$;
@@ -556,21 +582,31 @@ CREATE TRIGGER tg_detalle_programar_tomas
     FOR EACH ROW EXECUTE FUNCTION fn_tg_programar_tomas();
 
 -- ---------------------------------------------------------------------
--- 14) Si el paciente deja de aceptar recordatorios, se anulan sus
---     recordatorios pendientes (de citas y de medicamentos).
+-- 14) Cuando el paciente cambia sus preferencias de recordatorios, se
+--     reprograman los recordatorios de sus citas pendientes y de sus
+--     medicamentos vigentes (o se anulan si los desactivó).
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_tg_preferencia_recordatorios()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
-    IF OLD.recibir_recordatorios AND NOT NEW.recibir_recordatorios THEN
-        UPDATE notificacion SET estado = 'anulada'
-         WHERE id_persona = NEW.id_paciente AND estado = 'pendiente'
-           AND tipo IN ('recordatorio_cita','toma_medicamento');
+    IF NEW.recordatorio_cita IS DISTINCT FROM OLD.recordatorio_cita THEN
+        PERFORM fn_programar_recordatorios_cita(c.id_cita)
+           FROM cita c JOIN estado_cita e ON e.codigo = c.estado
+          WHERE c.id_paciente = NEW.id_paciente AND NOT e.es_final
+            AND (c.fecha + c.hora_inicio) > localtimestamp;
+    END IF;
+    IF NEW.recordar_medicamentos IS DISTINCT FROM OLD.recordar_medicamentos THEN
+        PERFORM fn_programar_tomas(d.id_detalle)
+           FROM receta_detalle d
+           JOIN receta r   ON r.id_receta = d.id_receta
+           JOIN atencion a ON a.id_atencion = r.id_atencion
+           JOIN cita c     ON c.id_cita = a.id_cita
+          WHERE c.id_paciente = NEW.id_paciente AND d.fecha_inicio + d.duracion_dias >= CURRENT_DATE;
     END IF;
     RETURN NULL;
 END;
 $$;
 
 CREATE TRIGGER tg_paciente_preferencia_recordatorios
-    AFTER UPDATE OF recibir_recordatorios ON paciente
+    AFTER UPDATE OF recordatorio_cita, recordar_medicamentos ON paciente
     FOR EACH ROW EXECUTE FUNCTION fn_tg_preferencia_recordatorios();

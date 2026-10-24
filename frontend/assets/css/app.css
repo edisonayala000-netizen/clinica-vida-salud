@@ -280,6 +280,7 @@ img { max-width: 100%; }
 .campo { grid-column: span 6; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .campo-3 { grid-column: span 3; } .campo-4 { grid-column: span 4; } .campo-8 { grid-column: span 8; }
 .campo-12 { grid-column: 1 / -1; }
+.campo-2 { grid-column: span 2; } .campo-5 { grid-column: span 5; }
 .campo label, .etiqueta-campo { font-weight: 600; font-size: .86rem; color: var(--tinta); }
 .campo label .opcional { font-weight: 400; color: var(--tinta-tenue); }
 .campo label .requerido { color: var(--rojo); }
@@ -407,6 +408,29 @@ dialog.modal::backdrop { background: rgba(10, 40, 37, .45); }
 .acceso-aviso { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 10px;
                 background: #FFF4E5; border: 1px solid #F3D19C; color: #7A4B00; font-size: .92rem; }
 .acceso-aviso .ico { flex: none; margin-top: 2px; }
+/* Grupo de opciones (radio) en formularios de preferencias */
+.grupo-opciones { border: 1px solid var(--borde); border-radius: 10px; padding: 14px 16px; margin: 0 0 16px; display: grid; gap: 8px; }
+.grupo-opciones legend { padding: 0 6px; display: grid; gap: 2px; }
+.grupo-opciones .opcion { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+
+/* CU16: receta con varios medicamentos y valores calculados */
+.lista-receta { display: flex; flex-direction: column; gap: 12px; }
+.fila-receta { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 10px 14px; padding: 14px;
+               border: 1px solid var(--borde); border-radius: 10px; background: #FAFCFB; }
+.fila-receta .campo-error, .fila-receta-resumen { grid-column: 1 / -1; margin: 0; font-size: .82rem; }
+.fila-receta-resumen:empty { display: none; }
+.fila-receta-acciones { justify-content: flex-end; align-items: flex-start; }
+.casilla-chica { font-size: .82rem !important; }
+.valor-calculado { min-height: 42px; display: flex; align-items: center; font-weight: 600; color: var(--pino); }
+/* Receta para ver e imprimir */
+.receta-medicamentos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.receta-medicamentos li { padding: 12px 14px; border: 1px solid var(--borde); border-radius: 10px; }
+.receta-medicamentos strong { color: var(--pino); }
+.receta-medicamentos .celda-sub { margin-top: 3px; }
+.receta-firma { margin-top: 48px; width: 260px; border-top: 1px solid var(--tinta); padding-top: 6px; text-align: center; font-size: .9rem; }
+.interruptor-recordar { display: flex; align-items: center; gap: 8px; }
+.cancelar-desde-correo summary { cursor: pointer; color: var(--rojo); font-weight: 600; font-size: .92rem; }
+.cancelar-desde-correo form { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
 .acceso-pie { margin-top: 26px; color: var(--tinta-tenue); font-size: .8rem; }
 .acceso-logo-movil { display: none; }
 .registro-paciente { width: min(760px, 100%); margin: 0 auto; padding: 36px 20px 60px; }
@@ -597,7 +621,7 @@ dialog.modal::backdrop { background: rgba(10, 40, 37, .45); }
     .usuario-datos { display: none; }
     .contenido { padding: 20px 16px 40px; }
     .rejilla-2, .rejilla-3 { grid-template-columns: 1fr; }
-    .campo, .campo-3, .campo-4, .campo-8 { grid-column: 1 / -1; }
+    .campo, .campo-2, .campo-3, .campo-4, .campo-5, .campo-8 { grid-column: 1 / -1; }
     .acceso { grid-template-columns: 1fr; }
     .acceso-portada { display: none; }
     .acceso-logo-movil { display: block; }

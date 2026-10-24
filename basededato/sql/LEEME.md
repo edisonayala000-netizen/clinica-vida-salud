@@ -32,7 +32,7 @@ Si la contraseña de `postgres` no es `postgres` (o el puerto no es 5432), indí
 | Archivo | Contenido |
 |---|---|
 | `01_esquema.sql` | Extensión `btree_gist`, función `fn_normalizar_texto`, secuencias de códigos (PAC-0001, MED-001, CM-0001, REC-0001) y las 24 tablas con todas sus restricciones |
-| `02_funciones_triggers.sql` | Triggers: fecha de actualización, datos obligatorios según el subtipo de la persona, validación de citas, transiciones de estado (leídas del catálogo), historial de cada cita, prohibición de borrar citas y registros clínicos, validación usuario–rol, bitácora inalterable, auditoría de datos, uso único del token de recuperación, atención solo de citas atendidas y programación de recordatorios por correo |
+| `02_funciones_triggers.sql` | Triggers: fecha de actualización, datos obligatorios según el subtipo de la persona, validación de citas, transiciones de estado (leídas del catálogo), historial de cada cita, prohibición de borrar citas y registros clínicos, validación usuario–rol, bitácora inalterable, auditoría de datos, uso único del token de recuperación, atención solo de citas atendidas y programación de recordatorios por correo según las preferencias del paciente |
 | `03_vistas.sql` | `v_paciente`, `v_medico`, `v_usuario` (cada subtipo unido a su persona), `v_cita_detalle`, `v_medico_especialidades`, `v_resumen_citas_dia`, `v_signo_vital` (con el IMC) y `v_receta_detalle` |
 | `04_datos_iniciales.sql` | Roles, 26 permisos, permisos por rol, estados de la cita y sus transiciones, 5 especialidades, 32 medicamentos y el usuario `admin` |
 | `05_datos_prueba.sql` | Médicos, horarios, días no laborables, 20 pacientes, personal de recepción, usuarios de demostración, citas alrededor de la fecha de instalación y 2 atenciones con signos vitales y receta |
@@ -73,8 +73,8 @@ Reglas que garantiza la propia base (aunque alguien se salte la aplicación):
 | La bitácora no se modifica ni se borra | trigger `fn_tg_bitacora_inalterable` (`BEFORE UPDATE OR DELETE`) |
 | Todo cambio de datos queda en la bitácora con los valores de antes y de después (sin contraseñas) | trigger `fn_tg_auditoria` |
 | Un enlace de recuperación de contraseña vence a los 30 minutos y se usa una sola vez | `token_recuperacion` y trigger `fn_tg_token_un_uso` |
-| Recordatorio de la cita 24 h antes; se anula si la cita se cancela | trigger `fn_tg_recordatorio_cita` |
-| Un recordatorio por cada toma de un medicamento recetado (máximo 90) | trigger `fn_tg_programar_tomas` |
+| Recordatorios de la cita según la preferencia del paciente (ninguno, 1 h, 24 h o ambos); se anulan si la cita se cancela y se reprograman si cambia la preferencia | función `fn_programar_recordatorios_cita` y triggers `fn_tg_recordatorio_cita` y `fn_tg_preferencia_recordatorios` |
+| Un recordatorio por cada toma de un medicamento recetado (máximo 90), si el medicamento y el paciente los tienen activados | función `fn_programar_tomas` y trigger `fn_tg_programar_tomas` |
 
 La aplicación informa a la base qué usuario hace cada cambio y desde qué IP (`app.id_usuario`, `app.ip`); con eso el
 historial de la cita y la auditoría saben quién hizo qué.
@@ -85,8 +85,8 @@ historial de la cita y la auditoría saben quién hizo qué.
 psql -U postgres -h localhost -d clinica_vida_salud -f pruebas/pruebas_bd.sql
 ```
 
-Ejecuta 25 pruebas: intenta guardar datos inválidos y verifica que PostgreSQL los rechace, y comprueba que los triggers
-automáticos funcionen (historial, auditoría con antes y después, recordatorios por correo). Todo ocurre dentro de una
+Ejecuta 27 pruebas: intenta guardar datos inválidos y verifica que PostgreSQL los rechace, y comprueba que los triggers
+automáticos funcionen (historial, auditoría con antes y después, recordatorios por correo y preferencias del paciente). Todo ocurre dentro de una
 transacción que se revierte al final, así que no deja cambios.
 
 ## Modificar la base

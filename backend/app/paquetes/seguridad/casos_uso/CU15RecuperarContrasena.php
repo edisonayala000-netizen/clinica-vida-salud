@@ -127,7 +127,7 @@ final class CU15RecuperarContrasena extends Controlador
             'Recupere su contraseña · Clínica Vida Salud', 'recuperar_clave',
             [
                 'usuario' => $cuenta['nombre_usuario'],
-                'enlace'  => Peticion::origen() . url('/restablecer', ['token' => $token]),
+                'enlace'  => url_absoluta('/restablecer', ['token' => $token]),
                 'minutos' => $minutos,
             ]
         );

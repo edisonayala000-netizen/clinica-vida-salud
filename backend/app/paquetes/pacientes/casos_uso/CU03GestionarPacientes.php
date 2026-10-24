@@ -77,6 +77,8 @@ final class CU03GestionarPacientes extends Controlador
             'contactos' => $this->pacientes->contactos($id),
             'resumen'   => $this->pacientes->resumenEstados($id),
             'recientes' => array_slice($this->pacientes->historial($id), 0, 5),
+            'atenciones' => $this->puede('atencion.ver')
+                ? (new \App\Paquetes\Atencion\Modelos\AtencionModelo())->delPaciente($id) : null,
             'puedeGestionar' => $this->puede('pacientes.gestionar'),
         ]);
     }

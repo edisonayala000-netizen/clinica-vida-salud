@@ -63,9 +63,13 @@ backend/
 | CU13 Consultar agenda médica (diaria y semanal) | `citas/casos_uso/CU13ConsultarAgendaMedica.php` | CitaModelo, Disponibilidad, EstadoCita, MedicoModelo, EspecialidadModelo, HorarioModelo | `citas/agenda.php`, `citas/agenda_semana.php`, `citas/listado.php`, `citas/detalle.php` |
 | CU14 Generar reportes | `reportes/casos_uso/CU14GenerarReportes.php` | ReporteModelo | `reportes/reportes.php` |
 | CU15 Recuperar contraseña por correo | `seguridad/casos_uso/CU15RecuperarContrasena.php` | UsuarioModelo, TokenModelo · `notificaciones/servicios/Notificador` · núcleo `Correo` (Brevo) | `seguridad/olvide_clave.php`, `seguridad/restablecer_clave.php`, `correos/recuperar_clave.php` |
+| CU16 Registrar atención médica | `atencion/casos_uso/CU16RegistrarAtencion.php` | AtencionModelo, RecetaModelo, MedicamentoModelo · CitaModelo, EstadoCita · Notificador | `atencion/formulario.php`, `atencion/receta.php` |
+| CU17 Consultar mis recetas | `atencion/casos_uso/CU17ConsultarRecetas.php` | RecetaModelo, PacienteModelo | `atencion/mis_recetas.php` |
+| CU18 Enviar notificaciones | `notificaciones/casos_uso/CU18EnviarNotificaciones.php` y la tarea `tareas/enviar_notificaciones.php` | NotificacionModelo · Notificador, ContenidoCorreo · núcleo `EnlaceFirmado`, `Correo` | `notificaciones/lista.php`, `cita_correo.php`, `baja.php`, `correos/*` |
+| CU19 Gestionar medicamentos | `atencion/casos_uso/CU19GestionarMedicamentos.php` | MedicamentoModelo | `atencion/medicamentos.php` |
 | Panel principal | `inicio/casos_uso/PanelPrincipal.php` | CitaModelo | `inicio/panel.php`, `inicio/citas_hoy.php` |
 
-**Estado:** los 15 casos de uso y el panel principal están implementados y probados.
+**Estado:** los 19 casos de uso y el panel principal están implementados y probados.
 
 El paquete `notificaciones` no tiene pantallas: su servicio `Notificador` arma el correo con una plantilla de
 `frontend/vistas/correos/`, lo envía con `App\Nucleo\Correo` y lo registra en la tabla `notificacion`.
@@ -132,6 +136,32 @@ Sin `api_key` el sistema funciona igual, pero no envía: escribe cada correo en 
 dominios reservados para pruebas (`example.com`, `.test`…) nunca se envía, aunque haya clave: los datos de prueba no
 escriben a personas reales. Cada correo queda registrado en la tabla `notificacion` (enviado o con el error de Brevo).
 
+Mientras desarrolla, agregue `'solo_a' => ['su.correo@gmail.com']` dentro de `correo`: así **solo** a esas direcciones se
+envía de verdad y todo lo demás va al log, aunque los datos tengan correos reales.
+
+Otros parámetros (en `config.php`, o por variables de entorno en la nube):
+
+| Parámetro | Variable de entorno | Para qué |
+|---|---|---|
+| `app.url` | `APP_URL` | Dirección completa del sistema (con su carpeta) para los enlaces de los correos. Vacía = la de la petición |
+| `app.secreto` | `APP_SECRETO` | Clave que firma los enlaces de confirmar o cancelar cita y de desactivar avisos. Vacía = se genera en `storage/secreto.key` (no se sube) |
+| `notificaciones.*` | — | Límite diario de correos (280), atraso máximo de un recordatorio (6 h), reintentos (3) y correos por ejecución (50) |
+
+### Tarea programada (recordatorios)
+
+Los recordatorios (24 h y 1 h antes de la cita, y cada toma de un medicamento) los programa la base de datos con su
+hora exacta en la tabla `notificacion`. Un sistema web no "despierta" solo: hace falta que algo revise cada 5 minutos
+si hay correos cuya hora llegó y los envíe. Eso hace `tareas/enviar_notificaciones.php`:
+
+```bat
+C:\xampp\php\php.exe backend\tareas\enviar_notificaciones.php --url=http://localhost/clinica-vida-salud
+```
+
+- **En Windows:** doble clic en `tareas\programar_tarea_windows.bat` la registra en el Programador de tareas (cada 5
+  minutos, solo con la PC encendida). Para quitarla: `schtasks /delete /tn "ClinicaVidaSalud_Notificaciones" /f`.
+- **En la nube:** se programa el mismo comando como tarea cron cada 5 minutos.
+- **A mano:** en *Notificaciones* (administrador), el botón «Enviar pendientes ahora» hace lo mismo.
+
 ## Pruebas
 
 ```bat
@@ -146,6 +176,14 @@ php backend\tests\pruebas_recuperacion.php http://localhost/clinica-vida-salud
 Ejecuta las 7 pruebas de CU15 (enlace de un solo uso, enlace inventado, contraseña débil, límite de 3 enlaces por hora…)
 con una cuenta nueva de `example.com`: no envía correos reales, toma el enlace de `storage/logs/correos.log`. Debe
 ejecutarse en la misma PC del servidor. Resultado en `tests/resultados_pruebas_recuperacion.md`.
+
+```bat
+php backend\tests\pruebas_atencion.php http://localhost/clinica-vida-salud
+```
+Ejecuta las 15 pruebas de CU16 a CU19: permisos de la atención, signos vitales fuera de rango, receta con recordatorios,
+privacidad del diagnóstico, «Mis recetas», la tarea programada, confirmar, cancelar y desactivar avisos desde el
+correo, enlace alterado, recordatorio atrasado y medicamento duplicado. Usa pacientes de `example.com` (no envía correos
+reales) y lee la base para comprobar lo que no se ve en pantalla. Resultado en `tests/resultados_pruebas_atencion.md`.
 
 ## Problemas comunes
 

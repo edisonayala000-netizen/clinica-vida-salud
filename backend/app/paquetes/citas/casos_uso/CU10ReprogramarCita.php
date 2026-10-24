@@ -8,6 +8,7 @@ use App\Nucleo\Validador;
 use App\Paquetes\Citas\Modelos\CitaModelo;
 use App\Paquetes\Citas\Servicios\Disponibilidad;
 use App\Paquetes\Citas\Servicios\EstadoCita;
+use App\Paquetes\Notificaciones\Servicios\Notificador;
 use Throwable;
 
 /**
@@ -72,6 +73,7 @@ final class CU10ReprogramarCita extends Controlador
     {
         try {
             $this->reprogramar($id, $_POST);
+            (new Notificador())->avisarCita('cita_reprogramada', $id);   // correo al paciente (CU18)
             $cita = $this->citas->obtener($id);
             $this->exito("Cita {$cita['codigo']} reprogramada para el " . fecha_corta($cita['fecha']) . ' a las ' . hora($cita['hora_inicio']) . '.', "/citas/{$id}");
         } catch (Throwable $e) {

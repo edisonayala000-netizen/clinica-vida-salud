@@ -162,7 +162,8 @@ final class CU04GestionarPerfilPaciente extends Controlador
     {
         $this->guardar('cuenta', function (int $id) {
             $d = Validador::validar($_POST, [
-                'recibir_recordatorios' => ['Recordatorios', 'booleano'],
+                'recordatorio_cita'     => ['Recordatorio de citas', 'requerido|en:ninguno,1h,24h,24h_1h'],
+                'recordar_medicamentos' => ['Recordatorio de medicamentos', 'booleano'],
                 'compartir_info_medica' => ['Privacidad', 'booleano'],
             ]);
             $this->pacientes->actualizar($id, $d);

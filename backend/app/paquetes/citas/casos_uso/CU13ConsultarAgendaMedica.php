@@ -167,7 +167,17 @@ final class CU13ConsultarAgendaMedica extends Controlador
             || ($u['rol'] === 'paciente' && (int) $cita['id_paciente'] !== (int) $u['id_paciente'])) {
             Autenticacion::exigirPermiso('citas.ver');
         }
+        // Registro clínico (CU16): lo ven el personal con atencion.ver y el propio paciente.
+        $atencion = null;
+        $signos = [];
+        if ($this->puede('atencion.ver') || ($u['rol'] === 'paciente' && (int) $cita['id_paciente'] === (int) $u['id_paciente'])) {
+            $modelo = new \App\Paquetes\Atencion\Modelos\AtencionModelo();
+            $atencion = $modelo->deCita($id);
+            $signos = $atencion ? $modelo->signos((int) $atencion['id_atencion']) : [];
+        }
         $this->vista('citas/detalle', [
+            'atencion'  => $atencion,
+            'signos'    => $signos,
             'titulo'    => 'Cita ' . $cita['codigo'],
             'cita'      => $cita,
             'historial' => $this->citas->historial($id),

@@ -8,8 +8,9 @@ use RuntimeException;
  *
  * - Se usa la extensión curl de PHP: no hace falta ninguna librería externa.
  * - La clave y el remitente verificado se leen de la configuración (config.local.php).
- * - Sin clave, o si el destinatario es de un dominio reservado para pruebas
- *   (example.com, .test, ...), el correo NO se envía: se escribe en
+ * - Sin clave, si el destinatario es de un dominio reservado para pruebas
+ *   (example.com, .test, ...) o si no está en la lista correo.solo_a (cuando se
+ *   usa en desarrollo), el correo NO se envía: se escribe en
  *   storage/logs/correos.log. Así las pruebas nunca escriben a personas reales.
  */
 final class Correo
@@ -23,7 +24,9 @@ final class Correo
     public static function enviar(string $destino, string $nombreDestino, string $asunto, string $html, string $texto): array
     {
         $c = Aplicacion::config('correo', []);
-        if (empty($c['api_key']) || empty($c['remitente']) || self::esDominioSinEnvio($destino, $c['dominios_sin_envio'] ?? [])) {
+        $soloA = array_map('strtolower', (array) ($c['solo_a'] ?? []));
+        if (empty($c['api_key']) || empty($c['remitente']) || self::esDominioSinEnvio($destino, $c['dominios_sin_envio'] ?? [])
+            || ($soloA && !in_array(strtolower($destino), $soloA, true))) {
             self::escribirLog($destino, $asunto, $texto);
             return ['enviado' => false, 'id_externo' => null];
         }

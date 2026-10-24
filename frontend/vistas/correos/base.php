@@ -3,8 +3,9 @@
  * Diseño común de los correos del sistema (HTML).
  * Los programas de correo ignoran las hojas de estilo: todo va con estilos en línea
  * y tablas. Colores de la clínica: pino #0E4D47, verde #12806F, menta #E4F2EE.
- * Variables: $asunto, $contenido (HTML ya escapado).
+ * Variables: $asunto, $contenido (HTML ya escapado) y $pie (opcional, HTML: enlaces para desactivar avisos).
  */
+$pie = $pie ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -25,6 +26,7 @@
             <?= $contenido ?>
         </td></tr>
         <tr><td style="background:#E4F2EE;padding:16px 28px;font-size:12px;line-height:1.5;color:#4D6662;">
+            <?php if ($pie !== ''): ?><?= $pie ?><br><br><?php endif; ?>
             Este es un correo automático del sistema de la Clínica Vida Salud; por favor no lo responda.
         </td></tr>
     </table>

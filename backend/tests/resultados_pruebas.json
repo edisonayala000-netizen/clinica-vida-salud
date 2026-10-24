@@ -3,7 +3,7 @@
         "n": 1,
         "nombre": "Registrar un paciente nuevo",
         "esperado": "El paciente queda guardado",
-        "obtenido": "Paciente PAC-0026 · Paciente De Prueba registrado. (CI 52850500)",
+        "obtenido": "Paciente PAC-0024 · Paciente De Prueba registrado. (CI 53871300)",
         "ok": true
     },
     {
@@ -17,7 +17,7 @@
         "n": 3,
         "nombre": "Programar una cita en horario disponible",
         "esperado": "La cita queda registrada",
-        "obtenido": "Cita CM-1020 registrada. (2026-10-26 08:30, Dr. Juan Pérez)",
+        "obtenido": "Cita CM-1008 registrada. (2026-10-26 08:30, Dr. Juan Pérez)",
         "ok": true
     },
     {
@@ -45,7 +45,7 @@
         "n": 7,
         "nombre": "Consultar el historial de un paciente",
         "esperado": "Aparecen sus citas registradas",
-        "obtenido": "El historial muestra la cita CM-1020 con estado Cancelada",
+        "obtenido": "El historial muestra la cita CM-1008 con estado Cancelada",
         "ok": true
     },
     {

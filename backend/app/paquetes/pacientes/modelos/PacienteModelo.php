@@ -90,7 +90,7 @@ final class PacienteModelo
     /** Columnas de PERSONA (datos personales) y de PACIENTE (datos médicos y preferencias). */
     private const CAMPOS_PERSONA = ['ci', 'nombres', 'apellidos', 'fecha_nacimiento', 'sexo', 'telefono', 'correo', 'direccion'];
     private const CAMPOS_PACIENTE = ['tipo_sangre', 'alergias', 'enfermedades_cronicas', 'medicamentos', 'antecedentes',
-                                     'recibir_recordatorios', 'compartir_info_medica'];
+                                     'recordatorio_cita', 'recordar_medicamentos', 'compartir_info_medica'];
 
     /** Registra la persona y luego su subtipo paciente (llamar dentro de una transacción). */
     public function crear(array $d): int

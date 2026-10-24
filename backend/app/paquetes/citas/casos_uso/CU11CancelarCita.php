@@ -8,6 +8,7 @@ use App\Nucleo\ErrorNegocio;
 use App\Nucleo\Validador;
 use App\Paquetes\Citas\Modelos\CitaModelo;
 use App\Paquetes\Citas\Servicios\EstadoCita;
+use App\Paquetes\Notificaciones\Servicios\Notificador;
 use Throwable;
 
 /**
@@ -54,6 +55,7 @@ final class CU11CancelarCita extends Controlador
     {
         try {
             $this->ejecutar($id, (string) ($_POST['motivo'] ?? ''), null);
+            (new Notificador())->avisarCita('cita_cancelada', $id);   // correo al paciente (CU18)
             $this->exito('Cita cancelada. El horario quedó libre y la cita se conserva en el historial.', "/citas/{$id}");
         } catch (Throwable $e) {
             $this->volverConError($e, "/citas/{$id}");
@@ -65,6 +67,7 @@ final class CU11CancelarCita extends Controlador
     {
         try {
             $this->ejecutar($id, (string) ($_POST['motivo'] ?? ''), (int) $this->usuario()['id_paciente']);
+            (new Notificador())->avisarCita('cita_cancelada', $id);
             $this->exito('Su cita fue cancelada.', '/mis-citas');
         } catch (Throwable $e) {
             $this->volverConError($e, '/mis-citas');

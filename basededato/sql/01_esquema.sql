@@ -85,13 +85,15 @@ CREATE TABLE paciente (
     medicamentos           VARCHAR(250),     -- medicamentos de uso habitual (texto libre)
     antecedentes           VARCHAR(500),
     -- Preferencias de la cuenta del paciente
-    recibir_recordatorios  BOOLEAN      NOT NULL DEFAULT TRUE,
+    recordatorio_cita      VARCHAR(8)   NOT NULL DEFAULT '24h',   -- ninguno, 1h, 24h o 24h_1h antes de la cita
+    recordar_medicamentos  BOOLEAN      NOT NULL DEFAULT TRUE,    -- aviso por correo en cada toma
     compartir_info_medica  BOOLEAN      NOT NULL DEFAULT TRUE,
     estado                 VARCHAR(10)  NOT NULL DEFAULT 'activo',
     creado_en              TIMESTAMPTZ  NOT NULL DEFAULT now(),
     actualizado_en         TIMESTAMPTZ  NOT NULL DEFAULT now(),
     CONSTRAINT uq_paciente_codigo UNIQUE (codigo),
     CONSTRAINT ck_paciente_sangre CHECK (tipo_sangre IS NULL OR tipo_sangre IN ('A+','A-','B+','B-','AB+','AB-','O+','O-')),
+    CONSTRAINT ck_paciente_recordatorio CHECK (recordatorio_cita IN ('ninguno','1h','24h','24h_1h')),
     CONSTRAINT ck_paciente_estado CHECK (estado IN ('activo','inactivo'))
 );
 
@@ -478,21 +480,24 @@ CREATE TABLE notificacion (
     error            VARCHAR(250),
     creado_en        TIMESTAMPTZ  NOT NULL DEFAULT now(),
     CONSTRAINT ck_notificacion_tipo   CHECK (tipo IN ('recuperar_clave','cita_registrada','cita_reprogramada',
-                                                      'cita_cancelada','recordatorio_cita','receta','toma_medicamento')),
+                                                      'cita_cancelada','recordatorio_cita','recordatorio_cita_1h',
+                                                      'receta','toma_medicamento')),
     CONSTRAINT ck_notificacion_estado CHECK (estado IN ('pendiente','enviada','error','anulada')),
     CONSTRAINT ck_notificacion_correo CHECK (correo_destino ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
     CONSTRAINT ck_notificacion_enviada CHECK ((estado = 'enviada') = (enviada_en IS NOT NULL)),
     -- Cada tipo lleva la referencia que necesita su correo.
     CONSTRAINT ck_notificacion_referencia CHECK (
-        (tipo NOT IN ('cita_registrada','cita_reprogramada','cita_cancelada','recordatorio_cita') OR id_cita IS NOT NULL)
+        (tipo NOT IN ('cita_registrada','cita_reprogramada','cita_cancelada','recordatorio_cita','recordatorio_cita_1h')
+         OR id_cita IS NOT NULL)
         AND (tipo <> 'receta' OR id_receta IS NOT NULL)
         AND (tipo <> 'toma_medicamento' OR id_detalle IS NOT NULL))
 );
--- Una toma de medicamento y un recordatorio de cita no se programan dos veces.
+-- Una toma de medicamento y un recordatorio de cita no se programan dos veces
+-- (las anuladas no cuentan: se pueden volver a programar).
 CREATE UNIQUE INDEX uq_notificacion_toma
-    ON notificacion (id_detalle, programada_para) WHERE tipo = 'toma_medicamento';
+    ON notificacion (id_detalle, programada_para) WHERE tipo = 'toma_medicamento' AND estado <> 'anulada';
 CREATE UNIQUE INDEX uq_notificacion_recordatorio_cita
-    ON notificacion (id_cita) WHERE tipo = 'recordatorio_cita' AND estado <> 'anulada';
+    ON notificacion (id_cita, tipo) WHERE tipo IN ('recordatorio_cita','recordatorio_cita_1h') AND estado <> 'anulada';
 
 -- =====================================================================
 --  ÍNDICES para las búsquedas más frecuentes

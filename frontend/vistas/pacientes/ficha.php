@@ -80,6 +80,28 @@ $p = $paciente;
             </table></div>
             <?php endif; ?>
         </section>
+        <?php if ($atenciones !== null): ?>
+        <section class="tarjeta">
+            <header class="tarjeta-cabecera"><h2>Atenciones</h2></header>
+            <?php if (!$atenciones): ?>
+                <div class="vacio"><?= icono('pulso') ?><h3>Sin atenciones registradas</h3></div>
+            <?php else: ?>
+            <div class="tabla-contenedor"><table class="tabla">
+                <thead><tr><th>Fecha</th><th>Diagnóstico</th><th>Médico</th><th>Receta</th></tr></thead>
+                <tbody>
+                <?php foreach ($atenciones as $a): ?>
+                    <tr>
+                        <td class="numero"><a href="<?= e(url('/citas/' . $a['id_cita'])) ?>"><?= e(fecha_corta($a['fecha'])) ?></a></td>
+                        <td><span class="celda-principal"><?= e($a['diagnostico']) ?></span><?php if ($a['tratamiento']): ?><span class="celda-sub"><?= e($a['tratamiento']) ?></span><?php endif; ?></td>
+                        <td><?= e($a['medico']) ?><span class="celda-sub"><?= e($a['especialidad']) ?></span></td>
+                        <td><?= $a['id_receta'] ? '<a class="codigo" href="' . e(url('/recetas/' . $a['id_receta'])) . '">' . e($a['codigo_receta']) . '</a>' : '<span class="texto-tenue">—</span>' ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table></div>
+            <?php endif; ?>
+        </section>
+        <?php endif; ?>
     </div>
     <div class="columna">
         <section class="tarjeta">

@@ -14,7 +14,11 @@ frontend/
 │   │                       portada_acceso.php (portada del login y de recuperar contraseña)
 │   ├── seguridad/          login, usuarios, formulario de usuario, permisos, bitácora, cambiar contraseña,
 │   │                       olvidé mi contraseña y crear nueva contraseña (CU15)
-│   ├── correos/            correos del sistema en HTML y texto: base.php (diseño común), recuperar_clave.php
+│   ├── correos/            correos del sistema en HTML y texto: base.php (diseño común), recuperar_clave.php,
+│   │                       cita.php (registrada, reprogramada, cancelada y recordatorios), receta.php, toma_medicamento.php
+│   ├── atencion/           atender la cita (diagnóstico, signos vitales y receta), receta para imprimir, mis recetas,
+│   │                       catálogo de medicamentos
+│   ├── notificaciones/     correos del sistema (administrador), confirmar o cancelar la cita y desactivar avisos desde el correo
 │   ├── pacientes/          lista, formulario, ficha, registro en línea, mi perfil, historial, mis citas
 │   ├── medicos/            especialidades, médicos (lista, formulario, ficha), horarios
 │   ├── citas/              programar, reprogramar, detalle, listado, agenda diaria y agenda semanal
@@ -23,6 +27,7 @@ frontend/
 └── assets/                 ← se publican en /assets (ver el .htaccess de la raíz)
     ├── css/app.css         sistema de diseño: colores, tipografía, tarjetas, tablas, formularios, impresión y celular
     ├── js/app.js           validación de formularios, confirmaciones, ventanas modales, menú en celular, ver contraseña
+    ├── js/atencion.js      receta con varios medicamentos, cálculo del IMC y de las tomas (CU16)
     ├── js/citas.js         CU09/CU10: carga médicos, días y horarios disponibles con fetch, sin recargar la página
     ├── img/                logo, favicon e íconos (iconos.svg)
     └── fonts/              Inter y Lora

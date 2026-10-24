@@ -13,6 +13,7 @@ $grupos = [
     'Mi espacio' => [
         ['/reservar',  'Reservar cita', 'calendario-mas', 'portal.reservar'],
         ['/mis-citas', 'Mis citas',     'calendario',     'portal.mis_citas'],
+        ['/mis-recetas', 'Mis recetas', 'reporte',        'portal.recetas'],
         ['/mi-perfil', 'Mi perfil',     'usuario',        'portal.perfil'],
     ],
     'Citas' => [
@@ -25,12 +26,14 @@ $grupos = [
         ['/medicos',        'Médicos',        'medico',       'medicos.ver'],
         ['/especialidades', 'Especialidades', 'especialidad', 'especialidades.gestionar'],
         ['/horarios',       'Horarios',       'reloj',        'horarios.gestionar'],
+        ['/medicamentos',   'Medicamentos',   'gota',         'medicamentos.gestionar'],
     ],
     'Administración' => [
         ['/reportes', 'Reportes',            'reporte', 'reportes.ver'],
         ['/usuarios', 'Usuarios',            'usuario', 'usuarios.gestionar'],
         ['/permisos', 'Permisos por rol',    'escudo',  'usuarios.gestionar'],
         ['/bitacora', 'Bitácora',            'historial', 'bitacora.ver'],
+        ['/notificaciones', 'Notificaciones', 'correo', 'notificaciones.ver'],
     ],
 ];
 

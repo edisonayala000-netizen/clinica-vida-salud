@@ -95,8 +95,18 @@ $seccion = array_key_exists($seccion, $secciones) ? $seccion : 'personales';
     <form method="post" action="<?= e(url('/mi-perfil/cuenta')) ?>">
         <?= csrf_campo() ?>
         <div class="tarjeta-cuerpo formulario">
-            <label class="casilla"><input type="checkbox" name="recibir_recordatorios" value="1"<?= marcado((bool) $p['recibir_recordatorios']) ?>>
-                <span><strong>Recordatorios de citas</strong><br><span class="texto-suave">Mostrar un aviso en mi panel cuando tenga una cita en las próximas 48 horas.</span></span></label>
+            <?php $recCita = viejo($anterior, 'recordatorio_cita', $p['recordatorio_cita']); ?>
+            <fieldset class="grupo-opciones">
+                <legend><strong>Recordatorio de mis citas por correo</strong>
+                    <span class="texto-suave">Se envía a <?= e($p['correo'] ?: 'su correo (aún no registró uno)') ?>.</span></legend>
+                <?php foreach (['ninguno' => 'No enviar', '1h' => '1 hora antes', '24h' => '24 horas antes (con botones para confirmar o cancelar)',
+                                '24h_1h' => '24 horas y 1 hora antes'] as $valor => $texto): ?>
+                    <label class="opcion"><input type="radio" name="recordatorio_cita" value="<?= $valor ?>"<?= marcado($recCita === $valor) ?>> <?= e($texto) ?></label>
+                <?php endforeach; ?>
+                <p class="ayuda">El aviso de 1 hora antes no permite cancelar: en línea se cancela hasta 2 horas antes de la cita.</p>
+            </fieldset>
+            <label class="casilla"><input type="checkbox" name="recordar_medicamentos" value="1"<?= marcado((bool) $p['recordar_medicamentos']) ?>>
+                <span><strong>Recordatorio de mis medicamentos</strong><br><span class="texto-suave">Un correo a la hora de cada toma de los medicamentos de mis recetas. En «Mis recetas» puede apagarlo para un medicamento en particular.</span></span></label>
             <label class="casilla"><input type="checkbox" name="compartir_info_medica" value="1"<?= marcado((bool) $p['compartir_info_medica']) ?>>
                 <span><strong>Compartir mi información médica con mis médicos</strong><br><span class="texto-suave">Si lo desmarca, el médico solo verá sus datos básicos (nombre, edad y sexo) en su agenda.</span></span></label>
         </div>

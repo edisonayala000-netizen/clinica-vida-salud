@@ -126,7 +126,8 @@ final class CitaModelo
     public function agenda(int $idMedico, string $fecha, ?string $estado = null): array
     {
         $sql = "SELECT v.*, p.fecha_nacimiento, p.sexo, p.tipo_sangre, p.alergias, p.enfermedades_cronicas,
-                       p.medicamentos, p.compartir_info_medica
+                       p.medicamentos, p.compartir_info_medica,
+                       EXISTS (SELECT 1 FROM atencion a WHERE a.id_cita = v.id_cita) AS tiene_atencion
                   FROM v_cita_detalle v JOIN v_paciente p ON p.id_paciente = v.id_paciente
                  WHERE v.id_medico = :m AND v.fecha = CAST(:f AS DATE)";
         $p = ['m' => $idMedico, 'f' => $fecha];

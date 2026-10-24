@@ -10,6 +10,7 @@ use App\Paquetes\Citas\Modelos\CitaModelo;
 use App\Paquetes\Citas\Servicios\Disponibilidad;
 use App\Paquetes\Medicos\Modelos\EspecialidadModelo;
 use App\Paquetes\Medicos\Modelos\MedicoModelo;
+use App\Paquetes\Notificaciones\Servicios\Notificador;
 use App\Paquetes\Pacientes\Modelos\PacienteModelo;
 use Throwable;
 
@@ -102,6 +103,7 @@ final class CU09ProgramarCita extends Controlador
     {
         try {
             $cita = $this->guardar(Peticion::entero('id_paciente') ?? 0);
+            (new Notificador())->avisarCita('cita_registrada', (int) $cita['id_cita']);   // correo al paciente (CU18)
             $this->exito("Cita {$cita['codigo']} registrada.", "/citas/{$cita['id_cita']}");
         } catch (Throwable $e) {
             $this->volverConError($e, '/citas/nueva' . (Peticion::entero('id_paciente') ? '?paciente=' . Peticion::entero('id_paciente') : ''));
@@ -113,6 +115,7 @@ final class CU09ProgramarCita extends Controlador
     {
         try {
             $cita = $this->guardar((int) $this->usuario()['id_paciente']);
+            (new Notificador())->avisarCita('cita_registrada', (int) $cita['id_cita']);
             $this->exito("Su cita {$cita['codigo']} quedó reservada. Le esperamos.", '/mis-citas');
         } catch (Throwable $e) {
             $this->volverConError($e, '/reservar');

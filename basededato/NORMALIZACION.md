@@ -45,7 +45,7 @@ las tablas, **todo determinante es una llave candidata**.
 | Tabla | Llaves | Dependencias funcionales |
 |---|---|---|
 | PERSONA | PK `id_persona`; LC `ci` | `id_persona` → ci, nombres, apellidos, fecha_nacimiento, sexo, telefono, correo, direccion, creado_en, actualizado_en · `ci` → id_persona |
-| PACIENTE | PK `id_paciente`; LC `codigo` | `id_paciente` → codigo, tipo_sangre, alergias, enfermedades_cronicas, medicamentos, antecedentes, recibir_recordatorios, compartir_info_medica, estado, creado_en, actualizado_en · `codigo` → id_paciente |
+| PACIENTE | PK `id_paciente`; LC `codigo` | `id_paciente` → codigo, tipo_sangre, alergias, enfermedades_cronicas, medicamentos, antecedentes, recordatorio_cita, recordar_medicamentos, compartir_info_medica, estado, creado_en, actualizado_en · `codigo` → id_paciente |
 | CONTACTO_EMERGENCIA | PK `id_contacto` | `id_contacto` → id_paciente, nombre, parentesco, telefono |
 | MEDICO | PK `id_medico`; LC `codigo`, `registro_profesional` | `id_medico` → codigo, registro_profesional, estado, creado_en, actualizado_en · `codigo` → id_medico · `registro_profesional` → id_medico |
 | ESPECIALIDAD | PK `id_especialidad`; LC nombre normalizado | `id_especialidad` → nombre, descripcion, estado, creado_en, actualizado_en |
@@ -89,16 +89,17 @@ las tablas, **todo determinante es una llave candidata**.
 | `bitacora.usuario` | Se guarda | En un inicio de sesión fallido es lo que se escribió (puede no existir la cuenta); en los demás casos es una constancia inalterable. |
 | `bitacora.datos_antes` / `datos_despues` (JSONB) | Se aceptan | Es un registro de auditoría de solo lectura: guarda una «foto» de las columnas que cambiaron en cualquier tabla. El sistema no busca ni actualiza valores dentro de esos datos, así que no hay anomalías. |
 | `usuario.correo` y `persona.correo` | Son atributos distintos | El primero es el correo de acceso y de recuperación de la cuenta (único entre cuentas); el segundo es el correo de contacto de la persona. Pueden ser diferentes (por ejemplo, el correo del padre para un paciente menor). |
+| `paciente.recordatorio_cita` (`ninguno`, `1h`, `24h`, `24h_1h`) | Un solo atributo con valores permitidos | Es una sola preferencia del paciente con 4 opciones excluyentes; guardarla en dos columnas «24 h sí/no» y «1 h sí/no» sería equivalente, pero así el `CHECK` la valida de una vez. |
 | `paciente.alergias`, `enfermedades_cronicas`, `medicamentos` | Texto libre | Son notas clínicas que se registran y se leen completas; el sistema no consulta alergias individuales. Si en el futuro se necesita (por ejemplo, alertar una alergia al recetar), se pasarían a una tabla `paciente_alergia`. |
 | `contacto_emergencia` no es una `persona` | Se deja como tabla dependiente del paciente | El contacto no es un actor del sistema ni necesita CI o cuenta; solo se guarda cómo ubicarlo. |
 | Columnas `codigo` (PAC-0001, MED-001, CM-0001, REC-0001) | Llaves alternativas | Son identificadores legibles para el usuario, únicos y generados por secuencia; no se repiten en otras tablas. |
 
 ## 5. Integridad que garantiza la base
 
-Además de las llaves, la base hace cumplir las reglas aunque alguien se salte la aplicación: 48 restricciones `CHECK`,
+Además de las llaves, la base hace cumplir las reglas aunque alguien se salte la aplicación: 49 restricciones `CHECK`,
 16 `UNIQUE`, 3 `EXCLUDE` (citas y horarios que no se cruzan), 33 llaves foráneas y 34 triggers (validación de citas,
 transiciones del catálogo, datos obligatorios por subtipo, historial, auditoría, token de un solo uso y recordatorios).
-El detalle está en [sql/LEEME.md](sql/LEEME.md) y se verifica con las 25 pruebas de `sql/pruebas/pruebas_bd.sql`.
+El detalle está en [sql/LEEME.md](sql/LEEME.md) y se verifica con las 27 pruebas de `sql/pruebas/pruebas_bd.sql`.
 
 ## Mapeo de clases a tablas
 
@@ -107,7 +108,7 @@ Cada clase persistente del diagrama de clases es una tabla. Las asociaciones se 
 | Paquete | Clase | Tabla | PK | FK | Demás columnas |
 |---|---|---|---|---|---|
 | Personas | Persona | PERSONA | id_persona | — | ci, nombres, apellidos, fecha_nacimiento, sexo, telefono, correo, direccion, creado_en, actualizado_en |
-| Personas | Paciente | PACIENTE | id_paciente | id_paciente → persona | codigo, tipo_sangre, alergias, enfermedades_cronicas, medicamentos, antecedentes, recibir_recordatorios, compartir_info_medica, estado, creado_en, actualizado_en |
+| Personas | Paciente | PACIENTE | id_paciente | id_paciente → persona | codigo, tipo_sangre, alergias, enfermedades_cronicas, medicamentos, antecedentes, recordatorio_cita, recordar_medicamentos, compartir_info_medica, estado, creado_en, actualizado_en |
 | Personas | ContactoEmergencia | CONTACTO_EMERGENCIA | id_contacto | id_paciente → paciente | nombre, parentesco, telefono |
 | Médicos | Medico | MEDICO | id_medico | id_medico → persona | codigo, registro_profesional, estado, creado_en, actualizado_en |
 | Médicos | Especialidad | ESPECIALIDAD | id_especialidad | — | nombre, descripcion, estado, creado_en, actualizado_en |
@@ -168,7 +169,8 @@ Subtipo de persona: datos médicos y preferencias del paciente (RF02).
 | enfermedades_cronicas | varchar(250) | No | No | No | Enfermedades crónicas. |
 | medicamentos | varchar(250) | No | No | No | Medicamentos de uso habitual. |
 | antecedentes | varchar(500) | No | No | No | Antecedentes médicos y familiares. |
-| recibir_recordatorios | boolean | No | No | Sí | Si acepta recordatorios por correo (citas y medicamentos). |
+| recordatorio_cita | varchar(8) | No | No | Sí | Recordatorio de citas por correo: ninguno, 1h, 24h o 24h_1h antes. |
+| recordar_medicamentos | boolean | No | No | Sí | Si recibe un correo a la hora de cada toma de sus medicamentos. |
 | compartir_info_medica | boolean | No | No | Sí | Si el médico puede ver su información médica en la agenda. |
 | estado | varchar(10) | No | No | Sí | activo o inactivo (el inactivo conserva su historial). |
 | creado_en | timestamptz | No | No | Sí | Fecha y hora de registro como paciente. |
@@ -486,7 +488,7 @@ Cola de correos del sistema (Brevo): recuperación, citas, recetas y recordatori
 | Atributo | Tipo de dato | PK | FK | Not Null | Descripción |
 |---|---|---|---|---|---|
 | id_notificacion | bigserial | Sí | No | Sí | Identificador. |
-| tipo | varchar(25) | No | No | Sí | recuperar_clave, cita_registrada, recordatorio_cita, receta, toma_medicamento, ... |
+| tipo | varchar(25) | No | No | Sí | recuperar_clave, cita_registrada, recordatorio_cita (24 h), recordatorio_cita_1h, receta, toma_medicamento, ... |
 | id_persona | integer | No | Sí → persona | Sí | Persona destinataria. |
 | correo_destino | varchar(120) | No | No | Sí | Dirección a la que se envió (dato histórico). |
 | asunto | varchar(150) | No | No | Sí | Asunto del correo. |

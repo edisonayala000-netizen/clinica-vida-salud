@@ -172,7 +172,7 @@ DECLARE v_cita INT; v_atencion INT; v_receta INT; v_detalle INT; v_tomas INT;
 BEGIN
     SELECT c.id_cita INTO v_cita
       FROM cita c JOIN paciente pa ON pa.id_paciente = c.id_paciente JOIN persona pe ON pe.id_persona = c.id_paciente
-     WHERE c.estado = 'atendida' AND pe.correo IS NOT NULL AND pa.recibir_recordatorios
+     WHERE c.estado = 'atendida' AND pe.correo IS NOT NULL AND pa.recordar_medicamentos
        AND NOT EXISTS (SELECT 1 FROM atencion a WHERE a.id_cita = c.id_cita)
      LIMIT 1;
     INSERT INTO atencion (id_cita, diagnostico) VALUES (v_cita, 'Diagnóstico de prueba') RETURNING id_atencion INTO v_atencion;
@@ -195,6 +195,40 @@ SELECT 25, 'Cancelar una cita anula su recordatorio (trigger fn_tg_recordatorio_
   FROM notificacion n
  WHERE n.tipo = 'recordatorio_cita'
    AND n.id_cita = (SELECT id_cita FROM cita WHERE motivo = 'Cita base de la prueba');
+
+-- Prueba positiva: la preferencia del paciente decide qué recordatorios de cita se programan.
+DO $$
+DECLARE v_cita INT; v_ambos TEXT; v_solo1h TEXT; v_ninguno INT;
+BEGIN
+    UPDATE paciente SET recordatorio_cita = '24h_1h' WHERE id_paciente = (SELECT pac_a FROM ref);
+    INSERT INTO cita (id_paciente, id_medico, id_especialidad, fecha, hora_inicio, hora_fin, motivo)
+    SELECT pac_a, med, esp_mg, fecha, '11:00', '11:30', 'Cita de la prueba de preferencias' FROM ref
+    RETURNING id_cita INTO v_cita;
+    SELECT string_agg(tipo, ', ' ORDER BY tipo) INTO v_ambos FROM notificacion WHERE id_cita = v_cita AND estado = 'pendiente';
+    UPDATE paciente SET recordatorio_cita = '1h' WHERE id_paciente = (SELECT pac_a FROM ref);
+    SELECT string_agg(tipo, ', ' ORDER BY tipo) INTO v_solo1h FROM notificacion WHERE id_cita = v_cita AND estado = 'pendiente';
+    UPDATE paciente SET recordatorio_cita = 'ninguno' WHERE id_paciente = (SELECT pac_a FROM ref);
+    SELECT count(*) INTO v_ninguno FROM notificacion WHERE id_cita = v_cita AND estado = 'pendiente';
+    INSERT INTO resultado VALUES (26, 'Preferencia de recordatorio de citas: 24h y 1h → solo 1h → ninguno (fn_tg_preferencia_recordatorios)',
+        v_ambos = 'recordatorio_cita, recordatorio_cita_1h' AND v_solo1h = 'recordatorio_cita_1h' AND v_ninguno = 0,
+        format('24h_1h: %s · 1h: %s · ninguno: %s pendientes', v_ambos, v_solo1h, v_ninguno));
+END $$;
+
+-- Prueba positiva: desactivar los recordatorios de medicamentos anula las tomas; reactivarlos las vuelve a programar.
+DO $$
+DECLARE v_detalle INT; v_paciente INT; v_antes INT; v_apagado INT; v_encendido INT;
+BEGIN
+    SELECT n.id_detalle, n.id_persona INTO v_detalle, v_paciente FROM notificacion n
+     WHERE n.tipo = 'toma_medicamento' AND n.estado = 'pendiente' ORDER BY n.id_notificacion DESC LIMIT 1;
+    SELECT count(*) INTO v_antes FROM notificacion WHERE id_detalle = v_detalle AND estado = 'pendiente';
+    UPDATE paciente SET recordar_medicamentos = FALSE WHERE id_paciente = v_paciente;
+    SELECT count(*) INTO v_apagado FROM notificacion WHERE id_detalle = v_detalle AND estado = 'pendiente';
+    UPDATE paciente SET recordar_medicamentos = TRUE WHERE id_paciente = v_paciente;
+    SELECT count(*) INTO v_encendido FROM notificacion WHERE id_detalle = v_detalle AND estado = 'pendiente';
+    INSERT INTO resultado VALUES (27, 'Desactivar y reactivar los recordatorios de medicamentos (fn_programar_tomas)',
+        v_antes > 0 AND v_apagado = 0 AND v_encendido = v_antes,
+        format('Tomas pendientes: %s → al desactivar %s → al reactivar %s', v_antes, v_apagado, v_encendido));
+END $$;
 
 \echo ''
 \echo '===================== RESULTADOS ====================='

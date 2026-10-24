@@ -28,7 +28,8 @@ COMMENT ON COLUMN paciente.alergias              IS 'Alergias conocidas.';
 COMMENT ON COLUMN paciente.enfermedades_cronicas IS 'Enfermedades crónicas.';
 COMMENT ON COLUMN paciente.medicamentos          IS 'Medicamentos de uso habitual.';
 COMMENT ON COLUMN paciente.antecedentes          IS 'Antecedentes médicos y familiares.';
-COMMENT ON COLUMN paciente.recibir_recordatorios IS 'Si acepta recordatorios por correo (citas y medicamentos).';
+COMMENT ON COLUMN paciente.recordatorio_cita     IS 'Recordatorio de citas por correo: ninguno, 1h, 24h o 24h_1h antes.';
+COMMENT ON COLUMN paciente.recordar_medicamentos IS 'Si recibe un correo a la hora de cada toma de sus medicamentos.';
 COMMENT ON COLUMN paciente.compartir_info_medica IS 'Si el médico puede ver su información médica en la agenda.';
 COMMENT ON COLUMN paciente.estado                IS 'activo o inactivo (el inactivo conserva su historial).';
 COMMENT ON COLUMN paciente.creado_en             IS 'Fecha y hora de registro como paciente.';
@@ -231,7 +232,7 @@ COMMENT ON COLUMN receta_detalle.recordar          IS 'Si se envían recordatori
 -- ---------------------------------------------------------- notificaciones
 COMMENT ON TABLE notificacion IS 'Cola de correos del sistema (Brevo): recuperación, citas, recetas y recordatorios.';
 COMMENT ON COLUMN notificacion.id_notificacion IS 'Identificador.';
-COMMENT ON COLUMN notificacion.tipo            IS 'recuperar_clave, cita_registrada, recordatorio_cita, receta, toma_medicamento, ...';
+COMMENT ON COLUMN notificacion.tipo            IS 'recuperar_clave, cita_registrada, recordatorio_cita (24 h), recordatorio_cita_1h, receta, toma_medicamento, ...';
 COMMENT ON COLUMN notificacion.id_persona      IS 'Persona destinataria.';
 COMMENT ON COLUMN notificacion.correo_destino  IS 'Dirección a la que se envió (dato histórico).';
 COMMENT ON COLUMN notificacion.asunto          IS 'Asunto del correo.';

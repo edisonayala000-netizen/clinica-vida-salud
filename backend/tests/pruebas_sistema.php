@@ -130,7 +130,7 @@ function primerHorarioLibre(Navegador $nav, int $medico): array
 prueba(1, 'Registrar un paciente nuevo', 'El paciente queda guardado', function () use ($recep, $ci, &$idPaciente) {
     $r = $recep->pedir('POST', '/pacientes', [
         '_csrf' => $recep->token('/pacientes/nuevo'), 'ci' => $ci, 'nombres' => 'Paciente', 'apellidos' => 'De Prueba',
-        'fecha_nacimiento' => '1990-05-20', 'sexo' => 'femenino', 'telefono' => '70000001', 'correo' => 'prueba@correo.com',
+        'fecha_nacimiento' => '1990-05-20', 'sexo' => 'femenino', 'telefono' => '70000001', 'correo' => 'prueba.sistema@example.com',
     ]);
     preg_match('#/pacientes/(\d+)$#', $recep->ultimaUrl, $m);
     $idPaciente = (int) ($m[1] ?? 0);

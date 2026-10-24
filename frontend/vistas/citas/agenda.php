@@ -70,6 +70,10 @@ $activas = array_filter($citas, static fn ($c) => $c['estado'] !== 'cancelada');
                         <?php if ($verMotivo && $c['motivo']): ?><span class="celda-sub">Motivo: <?= e($c['motivo']) ?></span><?php endif; ?>
                     </span>
                     <span class="acciones">
+                        <?php if (\App\Nucleo\Autenticacion::puede('atencion.registrar') && !$c['tiene_atencion']
+                                  && (in_array('atendida', $acc, true) || $c['estado'] === 'atendida')): ?>
+                            <a class="boton boton-primario boton-chico" href="<?= e(url('/citas/' . $c['id_cita'] . '/atencion')) ?>"><?= icono('pulso') ?>Atender</a>
+                        <?php endif; ?>
                         <?php if (in_array('atendida', $acc, true) && $puedeAtender): ?>
                             <form method="post" action="<?= e(url('/citas/' . $c['id_cita'] . '/estado')) ?>" class="no-imprimir">
                                 <?= csrf_campo() ?><input type="hidden" name="estado" value="atendida">
