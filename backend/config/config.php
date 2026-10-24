@@ -53,8 +53,9 @@ $config = [
         'api_key'   => getenv('BREVO_API_KEY') ?: '',
         'remitente' => getenv('CORREO_REMITENTE') ?: '',
         'nombre'    => 'Clínica Vida Salud',
-        // A estos dominios reservados nunca se envía (datos de prueba): el correo va al log.
-        'dominios_sin_envio' => ['example.com', 'example.org', 'example.net', 'test', 'invalid', 'localhost'],
+        // A estos dominios nunca se envía (datos de prueba): el correo va al log. vidasalud.bo es el dominio
+        // ficticio del personal de demostración; así nadie recibe correos por error ni hay rebotes en Brevo.
+        'dominios_sin_envio' => ['example.com', 'example.org', 'example.net', 'test', 'invalid', 'localhost', 'vidasalud.bo'],
         // Desarrollo: si tiene correos, SOLO a ellos se envía de verdad; los demás van al log.
         // Vacía = sin restricción (producción). Ej. en config.local.php: 'solo_a' => ['mi.correo@gmail.com']
         // o en la nube CORREO_SOLO_A=uno@gmail.com,otro@gmail.com
