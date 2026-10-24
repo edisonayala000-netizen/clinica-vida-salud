@@ -145,6 +145,10 @@ Otros parámetros (en `config.php`, o por variables de entorno en la nube):
 |---|---|---|
 | `app.url` | `APP_URL` | Dirección completa del sistema (con su carpeta) para los enlaces de los correos. Vacía = la de la petición |
 | `app.secreto` | `APP_SECRETO` | Clave que firma los enlaces de confirmar o cancelar cita y de desactivar avisos. Vacía = se genera en `storage/secreto.key` (no se sube) |
+| `bd.host`, `bd.puerto`, `bd.nombre`, `bd.usuario`, `bd.clave` | `DB_HOST`, `DB_PORT`, `DB_NOMBRE`, `DB_USUARIO`, `DB_CLAVE` | Conexión a PostgreSQL en la nube |
+| `bd.sslmode` | `DB_SSLMODE` | `require` para Supabase (conexión cifrada). Vacía = la opción por defecto |
+| `correo.api_key`, `correo.remitente` | `BREVO_API_KEY`, `CORREO_REMITENTE` | Clave de la API de Brevo y remitente verificado |
+| `correo.solo_a` | `CORREO_SOLO_A` | Correos separados por comas: solo a ellos se envía de verdad (pruebas). Vacía = a todos |
 | `notificaciones.*` | — | Límite diario de correos (280), atraso máximo de un recordatorio (6 h), reintentos (3) y correos por ejecución (50) |
 
 ### Tarea programada (recordatorios)

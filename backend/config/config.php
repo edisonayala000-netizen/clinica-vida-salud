@@ -23,13 +23,17 @@ $config = [
         'secreto'      => getenv('APP_SECRETO') ?: '',
     ],
 
-    // Conexión PDO con el controlador pdo_pgsql (requerimiento técnico 7)
+    // Conexión PDO con el controlador pdo_pgsql (requerimiento técnico 7).
+    // En la nube cada dato llega por una variable de entorno (DB_HOST, DB_PORT...); en la PC se usan
+    // estos valores o los de config.local.php.
     'bd' => [
-        'host'    => '127.0.0.1',
-        'puerto'  => 5432,
-        'nombre'  => 'clinica_vida_salud',
-        'usuario' => 'postgres',
-        'clave'   => 'postgres',
+        'host'    => getenv('DB_HOST') ?: '127.0.0.1',
+        'puerto'  => (int) (getenv('DB_PORT') ?: 5432),
+        'nombre'  => getenv('DB_NOMBRE') ?: 'clinica_vida_salud',
+        'usuario' => getenv('DB_USUARIO') ?: 'postgres',
+        'clave'   => getenv('DB_CLAVE') ?: 'postgres',
+        // Conexión cifrada: 'require' en Supabase. Vacío = la opción por defecto de PostgreSQL.
+        'sslmode' => getenv('DB_SSLMODE') ?: '',
     ],
 
     'sesion' => [
@@ -43,17 +47,18 @@ $config = [
     ],
 
     // Correos del sistema con la API de Brevo (CU15 y recordatorios). La clave y el remitente
-    // verificado van en config.local.php. Sin clave, los correos solo se escriben en
-    // storage/logs/correos.log (modo de desarrollo).
+    // verificado van en config.local.php o, en la nube, en BREVO_API_KEY y CORREO_REMITENTE.
+    // Sin clave, los correos solo se escriben en storage/logs/correos.log (modo de desarrollo).
     'correo' => [
-        'api_key'   => '',
-        'remitente' => '',
+        'api_key'   => getenv('BREVO_API_KEY') ?: '',
+        'remitente' => getenv('CORREO_REMITENTE') ?: '',
         'nombre'    => 'Clínica Vida Salud',
         // A estos dominios reservados nunca se envía (datos de prueba): el correo va al log.
         'dominios_sin_envio' => ['example.com', 'example.org', 'example.net', 'test', 'invalid', 'localhost'],
         // Desarrollo: si tiene correos, SOLO a ellos se envía de verdad; los demás van al log.
         // Vacía = sin restricción (producción). Ej. en config.local.php: 'solo_a' => ['mi.correo@gmail.com']
-        'solo_a' => [],
+        // o en la nube CORREO_SOLO_A=uno@gmail.com,otro@gmail.com
+        'solo_a' => array_values(array_filter(array_map('trim', explode(',', getenv('CORREO_SOLO_A') ?: '')))),
     ],
 
     // CU18 · Envío de notificaciones (tarea programada cada 5 minutos)

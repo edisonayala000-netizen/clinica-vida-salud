@@ -1,0 +1,14 @@
+# Lo que NO entra en la imagen Docker (ver Dockerfile)
+.git
+.gitattributes
+.gitignore
+.vscode
+.idea
+doc
+basededato
+backend/tests
+backend/config/config.local.php
+backend/storage/secreto.key
+backend/storage/logs/*.log
+Dockerfile
+.dockerignore

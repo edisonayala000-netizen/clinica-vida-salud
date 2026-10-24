@@ -22,6 +22,9 @@ final class BaseDatos
         if (self::$pdo === null) {
             $c = Aplicacion::config('bd');
             $dsn = sprintf('pgsql:host=%s;port=%d;dbname=%s', $c['host'], $c['puerto'], $c['nombre']);
+            if (!empty($c['sslmode'])) {
+                $dsn .= ';sslmode=' . $c['sslmode'];   // p. ej. 'require' para Supabase
+            }
             self::$pdo = new PDO($dsn, $c['usuario'], $c['clave'], [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
