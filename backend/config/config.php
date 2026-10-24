@@ -14,6 +14,9 @@ $config = [
         'zona_horaria' => 'America/La_Paz',
         // true solo en desarrollo: muestra el detalle técnico de los errores.
         'depuracion'   => false,
+        // Dirección pública del sistema para los enlaces de los correos (p. ej. https://clinica.ejemplo.com).
+        // Vacía = se toma de la petición actual (sirve en XAMPP y con php -S).
+        'url'          => '',
     ],
 
     // Conexión PDO con el controlador pdo_pgsql (requerimiento técnico 7)
@@ -33,6 +36,24 @@ $config = [
     'seguridad' => [
         'max_intentos'    => 5,        // intentos fallidos antes de bloquear
         'minutos_bloqueo' => 15,
+    ],
+
+    // Correos del sistema con la API de Brevo (CU15 y recordatorios). La clave y el remitente
+    // verificado van en config.local.php. Sin clave, los correos solo se escriben en
+    // storage/logs/correos.log (modo de desarrollo).
+    'correo' => [
+        'api_key'   => '',
+        'remitente' => '',
+        'nombre'    => 'Clínica Vida Salud',
+        // A estos dominios reservados nunca se envía (datos de prueba): el correo va al log.
+        'dominios_sin_envio' => ['example.com', 'example.org', 'example.net', 'test', 'invalid', 'localhost'],
+    ],
+
+    // CU15 · Recuperar contraseña
+    'recuperacion' => [
+        'minutos_vigencia'    => 30,   // vigencia del enlace enviado por correo
+        'max_por_hora_cuenta' => 3,    // solicitudes por cuenta en una hora
+        'max_por_hora_ip'     => 20,   // solicitudes desde una misma IP en una hora
     ],
 
     'citas' => [

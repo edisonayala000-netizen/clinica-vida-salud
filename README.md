@@ -48,7 +48,7 @@ por caso de uso en `backend/app/paquetes/<paquete>/casos_uso/` y sus pantallas e
 
 | Paquete | Casos de uso |
 |---|---|
-| `seguridad` | CU01 Iniciar sesión · CU02 Gestionar usuarios y permisos (incluye la bitácora de acciones) |
+| `seguridad` | CU01 Iniciar sesión · CU02 Gestionar usuarios y permisos (incluye la bitácora de acciones) · CU15 Recuperar contraseña por correo |
 | `pacientes` | CU03 Gestionar pacientes · CU04 Gestionar perfil del paciente · CU05 Consultar historial de citas |
 | `medicos` | CU06 Gestionar especialidades · CU07 Gestionar médicos · CU08 Gestionar horarios de atención |
 | `citas` | CU09 Programar cita · CU10 Reprogramar cita · CU11 Cancelar cita · CU12 Registrar asistencia · CU13 Consultar agenda médica (diaria y semanal) |
@@ -65,7 +65,10 @@ por caso de uso en `backend/app/paquetes/<paquete>/casos_uso/` y sus pantallas e
    ```php
    <?php return ['bd' => ['clave' => 'SU_CLAVE']];
    ```
-5. **Abrir:** <http://localhost/clinica-vida-salud> — usuario `admin`, contraseña `Clinica2026*`.
+5. **Correo (opcional):** para que «¿Olvidó su contraseña?» envíe correos reales, agregue la clave de Brevo a
+   `config.local.php` (paso a paso en [backend/README.md](backend/README.md#correo-brevo)). Sin clave, los correos
+   se escriben en `backend\storage\logs\correos.log`.
+6. **Abrir:** <http://localhost/clinica-vida-salud> — usuario `admin`, contraseña `Clinica2026*`.
 
 Sin Apache (desde la carpeta raíz): `php -S localhost:8000 backend/public/router.php` → <http://localhost:8000>
 
@@ -83,6 +86,9 @@ Sin Apache (desde la carpeta raíz): `php -S localhost:8000 backend/public/route
 ```bat
 :: 10 pruebas del examen (con el sistema encendido)
 php backend\tests\pruebas_sistema.php http://localhost/clinica-vida-salud
+
+:: 7 pruebas de CU15 Recuperar contraseña (no envían correos reales)
+php backend\tests\pruebas_recuperacion.php http://localhost/clinica-vida-salud
 
 :: 25 pruebas de restricciones y triggers (no dejan cambios en la base)
 psql -U postgres -d clinica_vida_salud -f basededato\sql\pruebas\pruebas_bd.sql

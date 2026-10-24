@@ -9,6 +9,9 @@ $nombresAccion = [
     'operacion'        => 'Operación',
     'exportacion'      => 'Exportación',
     'auditoria'        => 'Cambio de datos',
+    'recuperacion_solicitada' => 'Recuperación solicitada',
+    'recuperacion_rechazada'  => 'Recuperación rechazada',
+    'recuperacion_completada' => 'Contraseña restablecida',
 ];
 $nombresOperacion = ['INSERT' => 'Registro', 'UPDATE' => 'Modificación', 'DELETE' => 'Eliminación'];
 /* Valor de un campo auditado para mostrarlo (los JSON anidados se muestran compactos). */
@@ -19,11 +22,12 @@ $valorDato = static fn (mixed $v): string => match (true) {
     default      => (string) $v,
 };
 $claseAccion = static function (array $r): string {
-    if (in_array($r['accion'], ['inicio_fallido', 'cuenta_bloqueada'], true) || str_contains((string) $r['detalle'], '· con error')) {
+    if (in_array($r['accion'], ['inicio_fallido', 'cuenta_bloqueada', 'recuperacion_rechazada'], true)
+        || str_contains((string) $r['detalle'], '· con error')) {
         return 'estado-cancelada';
     }
     return match ($r['accion']) {
-        'inicio_sesion' => 'estado-atendida',
+        'inicio_sesion', 'recuperacion_completada' => 'estado-atendida',
         'cierre_sesion' => 'estado-inactivo',
         'exportacion'   => 'estado-confirmada',
         'auditoria'     => 'estado-inactivo',

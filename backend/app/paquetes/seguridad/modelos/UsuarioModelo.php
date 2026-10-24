@@ -29,6 +29,20 @@ final class UsuarioModelo
         );
     }
 
+    /** CU15: cuenta por nombre de usuario o correo, con el estado de su médico o paciente. */
+    public function buscarParaRecuperar(string $usuarioOCorreo): ?array
+    {
+        return BaseDatos::uno(
+            "SELECT u.id_usuario, u.id_persona, u.nombre_usuario, u.correo, u.nombres, u.apellidos, u.estado,
+                    m.estado AS estado_medico, p.estado AS estado_paciente
+               FROM v_usuario u
+               LEFT JOIN medico m   ON m.id_medico = u.id_medico
+               LEFT JOIN paciente p ON p.id_paciente = u.id_paciente
+              WHERE u.nombre_usuario = :v OR u.correo = :v",
+            ['v' => mb_strtolower(trim($usuarioOCorreo))]
+        );
+    }
+
     /** Suma un intento fallido; al llegar al máximo bloquea la cuenta unos minutos. */
     /** @return bool true si con este intento la cuenta quedó bloqueada */
     public function registrarIntentoFallido(int $id): bool

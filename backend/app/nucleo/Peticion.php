@@ -40,6 +40,21 @@ final class Peticion
         return $base;
     }
 
+    /**
+     * Esquema y dominio públicos del sistema, sin la carpeta base: "https://clinica.ejemplo.com".
+     * Usa app.url si está configurada; si no, la petición actual (respeta X-Forwarded-Proto
+     * cuando el sistema corre detrás de un proxy, como en la nube).
+     */
+    public static function origen(): string
+    {
+        $configurada = rtrim((string) Aplicacion::config('app.url', ''), '/');
+        if ($configurada !== '') {
+            return $configurada;
+        }
+        $https = ($_SERVER['HTTPS'] ?? '') === 'on' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+        return ($https ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    }
+
     /** Valor de $_POST o $_GET recortado; null si no viene o está vacío. */
     public static function entrada(string $clave, mixed $porDefecto = null): mixed
     {

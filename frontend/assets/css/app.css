@@ -400,6 +400,13 @@ dialog.modal::backdrop { background: rgba(10, 40, 37, .45); }
 .tarjeta-acceso .boton-bloque { min-height: 46px; font-size: .95rem; margin-top: 4px; }
 .acceso-registro { text-align: center; color: var(--tinta-suave); font-size: .9rem; padding-top: 14px; border-top: 1px solid var(--borde); }
 .acceso-registro a { font-weight: 600; }
+/* Etiqueta con un enlace a la derecha (Contraseña · ¿Olvidó su contraseña?) */
+.etiqueta-con-enlace { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.etiqueta-con-enlace a { font-size: .85rem; font-weight: 600; }
+/* CU15: aviso de enlace inválido o vencido */
+.acceso-aviso { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 10px;
+                background: #FFF4E5; border: 1px solid #F3D19C; color: #7A4B00; font-size: .92rem; }
+.acceso-aviso .ico { flex: none; margin-top: 2px; }
 .acceso-pie { margin-top: 26px; color: var(--tinta-tenue); font-size: .8rem; }
 .acceso-logo-movil { display: none; }
 .registro-paciente { width: min(760px, 100%); margin: 0 auto; padding: 36px 20px 60px; }

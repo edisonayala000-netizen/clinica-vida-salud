@@ -62,9 +62,13 @@ backend/
 | CU12 Registrar asistencia | `citas/casos_uso/CU12RegistrarAsistencia.php` | CitaModelo, EstadoCita | `citas/detalle.php`, `citas/agenda.php` |
 | CU13 Consultar agenda médica (diaria y semanal) | `citas/casos_uso/CU13ConsultarAgendaMedica.php` | CitaModelo, Disponibilidad, EstadoCita, MedicoModelo, EspecialidadModelo, HorarioModelo | `citas/agenda.php`, `citas/agenda_semana.php`, `citas/listado.php`, `citas/detalle.php` |
 | CU14 Generar reportes | `reportes/casos_uso/CU14GenerarReportes.php` | ReporteModelo | `reportes/reportes.php` |
+| CU15 Recuperar contraseña por correo | `seguridad/casos_uso/CU15RecuperarContrasena.php` | UsuarioModelo, TokenModelo · `notificaciones/servicios/Notificador` · núcleo `Correo` (Brevo) | `seguridad/olvide_clave.php`, `seguridad/restablecer_clave.php`, `correos/recuperar_clave.php` |
 | Panel principal | `inicio/casos_uso/PanelPrincipal.php` | CitaModelo | `inicio/panel.php`, `inicio/citas_hoy.php` |
 
-**Estado:** los 14 casos de uso y el panel principal están implementados y probados.
+**Estado:** los 15 casos de uso y el panel principal están implementados y probados.
+
+El paquete `notificaciones` no tiene pantallas: su servicio `Notificador` arma el correo con una plantilla de
+`frontend/vistas/correos/`, lo envía con `App\Nucleo\Correo` y lo registra en la tabla `notificacion`.
 
 Cada archivo de `casos_uso/` empieza con su **ficha**: reglas que programa, paquete, actores, requisitos, tablas y objetos
 de la base que usa, rutas, vistas, clases que usa, precondición, postcondición y flujo. Para saber qué hace un caso de uso
@@ -102,6 +106,32 @@ Para la contraseña real de PostgreSQL cree `config/config.local.php` (no se sub
 Durante el desarrollo puede ver el detalle técnico de los errores con
 `<?php return ['app' => ['depuracion' => true], 'bd' => ['clave' => 'SU_CLAVE']];` (desactívelo para la defensa).
 
+### Correo (Brevo)
+
+Los correos del sistema (CU15 recuperar contraseña y, más adelante, los recordatorios) se envían con la **API HTTP de
+Brevo** (plan gratuito: 300 correos al día) usando la extensión `curl` de PHP, sin librerías externas.
+
+1. Cree una cuenta en brevo.com y verifique el correo remitente en *Remitentes*.
+2. En *SMTP y API → Claves API* cree una clave con el permiso **Emails transaccionales: Todos** (lo demás, *Ninguno*).
+3. En *Configuración → Seguridad → IPs autorizadas* desactive el bloqueo de IPs desconocidas (en la nube la IP cambia).
+4. Agregue la sección `correo` a `config/config.local.php`:
+
+```php
+<?php
+return [
+    'bd' => ['clave' => 'SU_CLAVE'],
+    'correo' => [
+        'api_key'   => 'xkeysib-...',                 // la clave de Brevo (nunca se sube a GitHub)
+        'remitente' => 'correo.verificado@gmail.com', // el remitente verificado en Brevo
+        'nombre'    => 'Clínica Vida Salud',
+    ],
+];
+```
+
+Sin `api_key` el sistema funciona igual, pero no envía: escribe cada correo en `storage/logs/correos.log`. A los
+dominios reservados para pruebas (`example.com`, `.test`…) nunca se envía, aunque haya clave: los datos de prueba no
+escriben a personas reales. Cada correo queda registrado en la tabla `notificacion` (enviado o con el error de Brevo).
+
 ## Pruebas
 
 ```bat
@@ -109,6 +139,13 @@ php backend\tests\pruebas_sistema.php http://localhost/clinica-vida-salud
 ```
 Ejecuta las 10 pruebas mínimas del examen contra el sistema encendido y guarda el resultado en
 `tests/resultados_pruebas.md` y `.json`. Las pruebas registran datos; para dejar la base limpia vuelva a instalarla.
+
+```bat
+php backend\tests\pruebas_recuperacion.php http://localhost/clinica-vida-salud
+```
+Ejecuta las 7 pruebas de CU15 (enlace de un solo uso, enlace inventado, contraseña débil, límite de 3 enlaces por hora…)
+con una cuenta nueva de `example.com`: no envía correos reales, toma el enlace de `storage/logs/correos.log`. Debe
+ejecutarse en la misma PC del servidor. Resultado en `tests/resultados_pruebas_recuperacion.md`.
 
 ## Problemas comunes
 
@@ -122,3 +159,4 @@ Ejecuta las 10 pruebas mínimas del examen contra el sistema encendido y guarda 
 | La página se ve sin estilos | Abra `http://localhost/clinica-vida-salud/assets/css/app.css`; si da 404 revise el punto anterior |
 | `php` no se reconoce en la terminal | Use `C:\xampp\php\php.exe` o agregue `C:\xampp\php` al PATH |
 | *Call to undefined function curl_init* al correr las pruebas | Quite el `;` de `extension=curl` en `php.ini` |
+| No llega el correo de recuperación | Revise la tabla `notificacion` (columna `error`) o `storage/logs/correos.log`. *unrecognised IP address*: desactive el bloqueo de IPs en Brevo. *Sender not valid*: el `remitente` no es el verificado en Brevo. Si llegó, revise también la carpeta de spam |

@@ -10,8 +10,11 @@ igual sin internet.
 frontend/
 ├── vistas/                 ← pantallas, una carpeta por paquete (igual que el backend)
 │   ├── compartido/         layout_principal.php (menú lateral y barra superior), layout_simple.php (login y registro),
-│   │                       menu.php (se arma según los permisos del rol), paginacion.php, error.php
-│   ├── seguridad/          login, usuarios, formulario de usuario, permisos, bitácora, cambiar contraseña
+│   │                       menu.php (se arma según los permisos del rol), paginacion.php, error.php,
+│   │                       portada_acceso.php (portada del login y de recuperar contraseña)
+│   ├── seguridad/          login, usuarios, formulario de usuario, permisos, bitácora, cambiar contraseña,
+│   │                       olvidé mi contraseña y crear nueva contraseña (CU15)
+│   ├── correos/            correos del sistema en HTML y texto: base.php (diseño común), recuperar_clave.php
 │   ├── pacientes/          lista, formulario, ficha, registro en línea, mi perfil, historial, mis citas
 │   ├── medicos/            especialidades, médicos (lista, formulario, ficha), horarios
 │   ├── citas/              programar, reprogramar, detalle, listado, agenda diaria y agenda semanal

@@ -3,7 +3,7 @@
         "n": 1,
         "nombre": "Registrar un paciente nuevo",
         "esperado": "El paciente queda guardado",
-        "obtenido": "Paciente PAC-0022 · Paciente De Prueba registrado. (CI 98893295)",
+        "obtenido": "Paciente PAC-0026 · Paciente De Prueba registrado. (CI 52850500)",
         "ok": true
     },
     {
@@ -17,7 +17,7 @@
         "n": 3,
         "nombre": "Programar una cita en horario disponible",
         "esperado": "La cita queda registrada",
-        "obtenido": "Cita CM-1011 registrada. (2026-10-26 08:30, Dr. Juan Pérez)",
+        "obtenido": "Cita CM-1020 registrada. (2026-10-26 08:30, Dr. Juan Pérez)",
         "ok": true
     },
     {
@@ -45,14 +45,14 @@
         "n": 7,
         "nombre": "Consultar el historial de un paciente",
         "esperado": "Aparecen sus citas registradas",
-        "obtenido": "El historial muestra la cita CM-1011 con estado Cancelada",
+        "obtenido": "El historial muestra la cita CM-1020 con estado Cancelada",
         "ok": true
     },
     {
         "n": 8,
         "nombre": "Buscar las citas de un médico por fecha",
         "esperado": "Se muestran los resultados correctos",
-        "obtenido": "4 cita(s) del 2026-10-26, todas del Dr. Juan Pérez Rojas",
+        "obtenido": "6 cita(s) del 2026-10-26, todas del Dr. Juan Pérez Rojas",
         "ok": true
     },
     {
